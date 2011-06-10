@@ -14,14 +14,18 @@ function litecal_form_views_ui_preview_form_alter(&$form, &$form_state) {
 /**
  * Implementation of hook_theme().
  */
-function litecal_theme() {
+function litecal_theme($existing, $type, $theme, $path) {
   $registry = array();
-  $registry['litecal_timeitem'] =
-  $registry['litecal_timeslot'] = 
-  $registry['litecal_timeslots'] =
-  $registry['litecal_header'] = array(
-    'file' => 'litecal.theme.inc',
-  );
+  $registry['litecal_timeitem']['variable'] = array('item' => NULL, 'granularity');
+  $registry['litecal_timeslots']['variable'] = array('timespan' => NULL, 'quickadd' => array());
+  $registry['litecal_timeslot']['variable'] = array('timespan' => NULL, 'start' => NULL, 'date' => NULL, 'format' => NULL, 'quickadd' => array());
+  $registry['litecal_header']['variable'] = array('label' => NULL, 'start' => 'NULL', 'granularity' => NULL);
+
+  $registry['litecal_timeitem']['file'] =
+  $registry['litecal_timeslots']['file'] =
+  $registry['litecal_timeslot']['file'] =
+  $registry['litecal_header']['file'] = 'litecal.theme.inc';
+
   return $registry;
 }
 
@@ -29,13 +33,14 @@ function litecal_theme() {
  * Implementation of hook_views_api().
  */
 function litecal_views_api() {
-  return array('api' => 2);
+  return array('api' => 3);
 }
 
 /**
  * Implementation of hook_views_plugins().
  */
 function litecal_views_plugins() {
+  $views_path = drupal_get_path('module', 'views');
   return array(
     'module' => 'views', // This just tells our themes are elsewhere.
     'style' => array(
@@ -61,5 +66,6 @@ function litecal_views_plugins() {
  * Preprocessor for theme_litecal_view().
  */
 function template_preprocess_litecal_view(&$vars) {
+  $vars['class'] = implode($vars['classes_array'], ' ');
   $vars['view']->style_plugin->preprocess($vars);
 }

@@ -3,7 +3,10 @@
 /**
  * Theme a timespan item.
  */
-function theme_litecal_timeitem($item, $granularity) {
+function theme_litecal_timeitem($args) {
+  $item = $args['item'];
+  $granularity = $args['granularity'];
+
   $left = number_format($item->start / $granularity * 100, 2);
   $width = number_format($item->size / $granularity * 100, 2);
 
@@ -12,9 +15,19 @@ function theme_litecal_timeitem($item, $granularity) {
   $attr['class'] = 'litecal-item';
   $attr['class'] .= $item->starts ? ' starts' : '';
   $attr['class'] .= $item->ends ? ' ends' : '';
+
+  $data = "";
+  if (is_array($item->data)) {
+    foreach ($item->data as $field) {
+      $data .= $field;
+    }
+  } else {
+    $data = $item->data;
+  }
+
   if (module_exists('crayon')) {
     $attr['class'] .= ' crayon-anchor crayon-'. crayon_generate_index($item->id);
-    $popup = theme('crayon_popup', $item->data, $item->id);
+    $popup = theme('crayon_popup', array($data, $item->id));
   }
   else {
     $attr['class'] .= ' color';
@@ -22,30 +35,30 @@ function theme_litecal_timeitem($item, $granularity) {
   }
 
   if (!empty($item->url)) {
-    return l("$popup<span class='litecal-data'>{$item->data}</span>", $item->url, array('attributes' => $attr, 'html' => TRUE));
+    return l("$popup<span class='litecal-data'>{$data}</span>", $item->url, array('attributes' => $attr, 'html' => TRUE));
   }
   else {
     $attr = drupal_attributes($attr);
-    return "<div {$attr}>$popup<span class='litecal-data'>{$item->data}</span></div>";
+    return "<div {$attr}>$popup<span class='litecal-data'>{$data}</span></div>";
   }
 }
 
 /**
  * Theme all timeslots for a given timespan.
  */
-function theme_litecal_timeslots($timespan, $quickadd = array()) {
-  switch ($timespan->unit) {
+function theme_litecal_timeslots($args) {
+  switch ($args['timespan']->unit) {
     case 'days':
       $format = 'j';
       break;
   }
 
   $slots = array();
-  $date = drupal_clone($timespan->from);
+  $date = clone $args['timespan']->from;
 
-  for ($i = 0; $i < $timespan->granularity; $i++) { 
-    $slots[] = theme('litecal_timeslot', $timespan, $i, $date, $format, $quickadd);
-    date_modify($date, "+1 {$timespan->unit}");
+  for ($i = 0; $i < $args['timespan']->granularity; $i++) { 
+    $slots[] = theme('litecal_timeslot', array('timespan' => $args['timespan'], 'start' => $i, 'date' => $date, 'format' => $format, 'quickadd' => $args['quickadd']));
+    date_modify($date, "+1 {$args['timespan']->unit}");
   }
   return $slots;
 }
@@ -53,7 +66,13 @@ function theme_litecal_timeslots($timespan, $quickadd = array()) {
 /**
  * Theme a single timeslot.
  */
-function theme_litecal_timeslot($timespan, $start, $date, $format, $quickadd = array()) {
+function theme_litecal_timeslot($args) {
+  $timespan = $args['timespan'];
+  $start = $args['start'];
+  $date = $args['date'];
+  $format = $args['format'];
+  $quickadd = $args['quickadd'];
+
   $add = '';
   $attr = array('style' => '');
   $link_attr = array('class' => 'label');
@@ -111,7 +130,11 @@ function theme_litecal_timeslot($timespan, $start, $date, $format, $quickadd = a
 /**
  * Theme a header, like days of the week for a month.
  */
-function theme_litecal_header($label, $start, $granularity) {
+function theme_litecal_header($args) {
+  $label = $args['label'];
+  $start = $args['start'];
+  $granularity = $args['granularity'];
+
   $left = number_format($start / $granularity * 100, 2);
   $width = number_format(1 / $granularity * 100, 2);
 

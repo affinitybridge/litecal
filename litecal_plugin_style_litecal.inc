@@ -10,14 +10,17 @@
  * @ingroup views_style_plugins
  */
 class litecal_plugin_style_litecal extends views_plugin_style {
+
   /**
    * Set default options.
    */
   function option_definition() {
     $options = parent::option_definition();
+
     $options['style'] = array('default' => 'full');
     $options['colorby'] = array('default' => 0);
     $options['quickadd'] = array('default' => 0);
+
     return $options;
   }
 
@@ -78,6 +81,12 @@ class litecal_plugin_style_litecal extends views_plugin_style {
    * Validate options.
    */
   function options_validate(&$form, &$form_state) {
+    if (!$this->isValid()) {
+      drupal_set_message(t('The litecal style requires you to add a <strong>Date argument</strong> to your view.'), 'error');
+    }
+  }
+
+  function isValid() {
     $valid = FALSE;
 
     // Find argument handler
@@ -89,9 +98,7 @@ class litecal_plugin_style_litecal extends views_plugin_style {
       }
     }
 
-    if (!$valid) {
-      drupal_set_message(t('The litecal style requires you to add a <strong>Date argument</strong> to your view.'), 'error');
-    }
+    return $valid;
   }
 
   /**
@@ -108,28 +115,57 @@ class litecal_plugin_style_litecal extends views_plugin_style {
 
     // Find the date_api argument handler.
     $arg_pos = 0;
-    $args = $view->args;
+    $args = isset($view->args) ? $view->args : array();
+
+    $date_argument_handler = NULL;
     foreach ($view->argument as $argument => $handler) {
-      if (get_class($handler) == 'date_api_argument_handler') {
-        $arg_granularity = $handler->granularity;
-        $arg_from = $handler->min_date;
-        $arg_to = $handler->max_date;
+      if (get_class($handler) == 'date_views_argument_handler') {
+        $date_argument_handler = $handler;
         break;
       }
-      else {
-        $arg_pos++;
-      }
+      $arg_pos++;
     }
+
+    $valid_argument = FALSE;
+    if (!is_null($date_argument_handler)) {
+      // This only works if the argument's default value has been set to
+      // "current_date".
+      // TODO: Need to add extra handling here.
+      $valid_argument = TRUE;
+
+      $arg = $date_argument_handler->argument;
+      $arg_granularity = $date_argument_handler->granularity;
+      $arg_from = $handler->min_date;
+      $arg_to = $handler->max_date;
+    }
+
+    if (!$valid_argument) {
+      $arg = date("Y-m", REQUEST_TIME);
+      $handler = new date_sql_handler();
+      $date_range = $handler->arg_range($arg);
+
+      $arg_granularity = "month";
+      $arg_from = $date_range[0];
+      $arg_to = $date_range[1];
+    }
+
+    $date = new DateObject($arg);
+    $date_arr = $date->toArray();
+    $year = $date_arr['year'];
+    $month = $date_arr['month'];
+
 
     // Generate the right calendar type based on date granularity
     switch ($arg_granularity) {
       case 'month':
         // Generate Prev / Next links
-        $next_month = ($view->argument[$argument]->month == 12) ? 1 : $view->argument[$argument]->month + 1;
-        $next_year = ($view->argument[$argument]->month == 12) ? $view->argument[$argument]->year + 1 : $view->argument[$argument]->year;
+        $next_month = ($month == 12) ? 1 : $month + 1;
+        $next_month = ($next_month < 10) ? "0$next_month" : $next_month;
+        $next_year = ($month == 12) ? $year + 1 : $year;
 
-        $prev_month = ($view->argument[$argument]->month == 1) ? 12 : $view->argument[$argument]->month - 1;
-        $prev_year = ($view->argument[$argument]->month == 1) ? $view->argument[$argument]->year - 1 : $view->argument[$argument]->year;
+        $prev_month = ($month == 1) ? 12 : $month - 1;
+        $prev_month = ($prev_month < 10) ? "0$prev_month" : $prev_month;
+        $prev_year = ($month == 1) ? $year - 1 : $year;
 
         $args[$arg_pos] = "{$prev_year}-{$prev_month}";
         $links['prev'] = array('title' => t('Previous'), 'href' => $view->get_url($args));
@@ -144,20 +180,58 @@ class litecal_plugin_style_litecal extends views_plugin_style {
     }
 
     $items = array();
-
+    $aliases = array();
     // Find date fields and generate litecal items from them
-    if (!empty($view->date_info->date_handler_fields)) {
+    if (!empty($view->field)) {
+      foreach ($view->field as $key => $field) {
+        if (isset($field->field_info) && $field->field_info['type'] == 'date') {
+          $aliases[] = $field->field;
+        }
+      }
+    }
+
+    if (!empty($aliases)) {
+      // Each row.
+      foreach ($view->result as $count => $result) {
+        // Each date field.
+        foreach ($aliases as $alias) {
+          // Each date field value.
+          $prop = "field_$alias";
+          foreach ($result->{$prop} as $date) {
+            $item = new StdClass();
+            $item->from = new DateObject($date['raw']['value'], 'UTC');
+            $item->from->setTimezone(new DateTimezone($date['raw']['timezone']));
+            $item->to = isset($date['raw']['value2']) ? new DateObject($date['raw']['value2'], 'UTC') : clone $item->from;
+            $item->to->setTimezone(new DateTimezone($date['raw']['timezone']));
+            $item->id = !empty($colorby_field) ? $colorby_field->render($result) : $result->{$view->base_field};
+            $item->data = $this->rendered_fields[$count];
+            unset($item->data[$alias]);
+
+            // Link to node
+            // @TODO: make this views token-customizable
+            $item->url = ($view->base_table == 'node') ? "node/{$result->nid}" : NULL;
+
+            $items[] = $item;
+          }
+        }
+      }
+    }
+
+/*
       // Collect from and to aliases for all date fields on this view
       $aliases = array();
-      foreach ($view->date_info->date_handler_fields as $date_field) {
+      foreach ($view->date_info->date_fields as $date_field) {
         $real_field = $date_field['view_field']->real_field;
+
         if (!empty($date_field['view_field']->aliases[$real_field])) {
           $aliases[$real_field]['from'] = $date_field['view_field']->aliases[$real_field];
         }
+
         if (!empty($date_field['view_field']->aliases["{$real_field}2"])) {
           $aliases[$real_field]['to'] = $date_field['view_field']->aliases["{$real_field}2"];
         }
       }
+
       if (!empty($aliases)) {
         if (!empty($options['colorby']) && !empty($view->field[$options['colorby']])) {
           $colorby_field = $view->field[$options['colorby']];
@@ -167,7 +241,7 @@ class litecal_plugin_style_litecal extends views_plugin_style {
             if (!empty($row->{$alias['from']})) {
               $item = new StdClass();
               $item->from = date_convert($row->{$alias['from']}, DATE_ISO, DATE_OBJECT);
-              $item->to = isset($alias['to'], $row->{$alias['to']}) ? date_convert($row->{$alias['to']}, DATE_ISO, DATE_OBJECT) : drupal_clone($item->from);
+              $item->to = isset($alias['to'], $row->{$alias['to']}) ? date_convert($row->{$alias['to']}, DATE_ISO, DATE_OBJECT) : clone $item->from;
               $item->id = !empty($colorby_field) ? $colorby_field->render($row) : $row->{$view->base_field};
               $item->data = $vars['rows'][$num];
 
@@ -181,12 +255,13 @@ class litecal_plugin_style_litecal extends views_plugin_style {
           }
         }
       }
+*/
+    if (isset($litecal)) {
+      $litecal->add($items);
+      $litecal->build();
+
+      $vars = array_merge($vars, $litecal->built);
     }
-
-    $litecal->add($items);
-    $litecal->build();
-
-    $vars = array_merge($vars, $litecal->built);
   }
 }
 
@@ -195,7 +270,8 @@ class litecal_plugin_style_litecal extends views_plugin_style {
  */
 function litecal_date_difference($date1, $date2, $measure = 'seconds') {
   $modifier = date_format($date1, 'U') - date_format($date2, 'U') < 0 ? -1 : 1;
-  return date_difference($date1, $date2, $measure) * $modifier;
+  //return date_difference($date1, $date2, $measure) * $modifier;
+  return $date1->difference($date2, $measure) * $modifier;
 }
 
 /**
@@ -228,11 +304,11 @@ class litecal_month {
   function __construct($from_date, $to_date, $options = array()) {
     $this->options = $options;
 
-    $this->from = drupal_clone($from_date);
-    $this->to = drupal_clone($to_date);
+    $this->from = clone $from_date;
+    $this->to = clone $to_date;
 
-    $this->display_from = drupal_clone($from_date);
-    $this->display_to = drupal_clone($to_date);
+    $this->display_from = clone $from_date;
+    $this->display_to = clone $to_date;
 
     // Get the day of the week for FROM, TO
     $from_weekday = date_format_date($this->from, 'custom', 'w');
@@ -250,7 +326,7 @@ class litecal_month {
     date_modify($this->display_to, "+{$to_offset} days");
 
     // Generate timespans
-    $current = drupal_clone($this->display_from);
+    $current = clone $this->display_from;
 
     while (litecal_date_difference($this->display_to, $current, 'hours') > 0) {
       $timespan = new litecal_timespan($current, 7, 'days');
@@ -258,12 +334,12 @@ class litecal_month {
       // If the real calendar start is not the same as the display start,
       // We need to store it with the timespan.
       if (litecal_date_between($this->from, $timespan->from, $timespan->to)) {
-        $timespan->real_from = drupal_clone($this->from);
+        $timespan->real_from = clone $this->from;
       }
       // If the real calendar end is not the same as the display end,
       // We need to store it with the timespan.
       if (litecal_date_between($this->to, $timespan->from, $timespan->to)) {
-        $timespan->real_to = drupal_clone($this->to);
+        $timespan->real_to = clone $this->to;
       }
 
       $this->timespans[] = $timespan;
@@ -301,12 +377,12 @@ class litecal_month {
       foreach ($timespan->built as $timespan_row) {
         $rendered = array();
         foreach ($timespan_row as $k => $item) {
-          $rendered[] = theme('litecal_timeitem', $item, $timespan->granularity);
+          $rendered[] = theme('litecal_timeitem', array('item' => $item, 'granularity' => $timespan->granularity));
         }
         $timespan_rows[] = $rendered;
       }
       $this->built['timespans'][$num]['rows'] = $timespan_rows;
-      $this->built['timespans'][$num]['slots'] = theme('litecal_timeslots', $timespan, $quickadd);
+      $this->built['timespans'][$num]['slots'] = theme('litecal_timeslots', array('timespan' => $timespan, 'quickadd' => $quickadd));
     }
 
     // Pass display style information on
@@ -324,7 +400,7 @@ class litecal_month {
     }
     $total = count($weekdays);
     foreach ($weekdays as $num => $label) {
-      $this->built['header'][] = theme('litecal_header', $label, $num, $total);
+      $this->built['header'][] = theme('litecal_header', array('label' => $label, 'start' => $num, 'granularity' => $total));
     }
 
     // Month title
@@ -362,13 +438,13 @@ class litecal_timespan {
    *   A dateAPI friendly unit string, e.g. "days"
    */
   function __construct($from, $granularity, $unit) {
-    $this->from = drupal_clone($from);
-    $this->to = drupal_clone($from);
+    $this->from = clone $from;
+    $this->to = clone $from;
     date_modify($this->to, "+{$granularity} {$unit}");
 
     // These values can be manipulated post initialization.
-    $this->real_from = drupal_clone($this->from);
-    $this->real_to = drupal_clone($this->to);
+    $this->real_from = clone $this->from;
+    $this->real_to = clone $this->to;
 
     $this->granularity = $granularity;
     $this->unit = $unit;
@@ -388,7 +464,9 @@ class litecal_timespan {
    */
   function convert($from, $to) {
     // Ensure the times are within the timespan
-    if (litecal_date_difference($to, $this->from, $this->unit) >= 0 && litecal_date_difference($from, $this->to, $this->unit) < 0 ) {
+    $to_from = litecal_date_difference($to, $this->from, $this->unit);
+    $from_to = litecal_date_difference($from, $this->to, $this->unit);
+    if ($to_from >= 0 && $from_to < 0) {
       $x = 0;
 
       if (litecal_date_difference($from, $this->from) >= 0) {

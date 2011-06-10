@@ -1,8 +1,8 @@
 <div class='litecal <?php print $class ?>'>
 
-<div class='litecal-title clear-block'>
+<div class='litecal-title clearfix'>
   <h3 class='litecal-title'><?php print $title ?></h3>
-  <?php print theme('links', $links) ?>
+  <?php print theme('links', array('links' => $links)) ?>
 </div>
 
 <div class='litecal-header'>
@@ -25,7 +25,7 @@
   <?php endforeach; ?>
 
   <?php foreach ($timespan['rows'] as $row): ?>
-    <div class='litecal-row clear-block'>
+    <div class='litecal-row clearfix'>
       <?php foreach ($row as $item): ?>
         <?php print $item; ?>
       <?php endforeach; ?>
