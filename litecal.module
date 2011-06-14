@@ -69,3 +69,66 @@ function template_preprocess_litecal_view(&$vars) {
   $vars['class'] = implode($vars['classes_array'], ' ');
   $vars['view']->style_plugin->preprocess($vars);
 }
+
+
+
+/*******************************************/
+/** SEARCH API DATE EXTENSION BEGINS HERE. */
+/*******************************************/
+
+/**
+ * Implementation of hook_date_views_tables().
+ */
+function litecal_date_views_tables() {
+  $keys = _get_search_api_index_base_tables();
+  return $keys;
+}
+
+/**
+ * Implement hook_date_views_fields().
+ * 
+ * All modules that create custom fields that use the 
+ * 'views_handler_field_date' handler can provide
+ * additional information here about the type of
+ * date they create so the date can be used by
+ * the Date API views date argument and date filter.
+ */
+function litecal_date_views_fields($field) {
+  $keys = _get_search_api_index_base_tables();
+
+  foreach ($keys as $base_table) {
+    if ($field === $base_table . '.date_filter') {
+      return array(
+        // The type of date: DATE_UNIX, DATE_ISO, DATE_DATETIME.
+        'sql_type' => DATE_UNIX, 
+        // Timezone handling options: 'none', 'site', 'date', 'utc' .
+        'tz_handling' => 'site',
+        // Needed only for dates that use 'date' tz_handling.
+        'timezone_field' => '', 
+        // Needed only for dates that use 'date' tz_handling.
+        'offset_field' => '', 
+        // Array of "table.field" values for related fields that should be 
+        // loaded automatically in the Views SQL.
+        'related_fields' => array(),
+        // Granularity of this date field's db data. 
+        'granularity' => array('year', 'month', 'day', 'hour', 'minute', 'second'),
+      );
+    }
+  }
+  return array();
+}
+
+/**
+ *
+ */
+function _get_search_api_index_base_tables() {
+  $keys = array();
+  foreach (search_api_index_load_multiple(FALSE) as $index) {
+    $keys['search_api_index_' . $index->machine_name] = 'search_api_index_' . $index->machine_name;
+  }
+  return $keys;
+}
+
+function litecal_entity_property_info() {
+
+}

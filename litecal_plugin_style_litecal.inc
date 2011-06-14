@@ -181,11 +181,30 @@ class litecal_plugin_style_litecal extends views_plugin_style {
 
     $items = array();
     $aliases = array();
+    $base = 'node';
     // Find date fields and generate litecal items from them
     if (!empty($view->field)) {
       foreach ($view->field as $key => $field) {
-        if (isset($field->field_info) && $field->field_info['type'] == 'date') {
-          $aliases[] = $field->field;
+        // Gross special handling for each view base table source.
+        switch (get_class($field)) {
+          case 'views_handler_field_field':
+            $base = 'node';
+            if (isset($field->field_info) && $field->field_info['type'] == 'date') {
+              $aliases[] = $field->field;
+            }
+            break;
+
+          case 'SearchApiViewsHandlerFieldDate':
+            $base = 'search_api';
+            $type = $field->definition['type'];
+            // Handling for repeating dates.
+            if (search_api_is_list_type($type)) {
+              $type = substr($type, 5, -1);
+            }
+
+            $pieces = explode(':', $field->real_field);
+            $aliases[] = $pieces[0];
+            break;
         }
       }
     }
@@ -193,23 +212,27 @@ class litecal_plugin_style_litecal extends views_plugin_style {
     if (!empty($aliases)) {
       // Each row.
       foreach ($view->result as $count => $result) {
+        // More special handling for each view base table source.
+        switch ($base) {
+          case 'node':
+            $default_colorby_field_id = $view->base_field;
+            $entity = $result->_field_data['nid']['entity'];
+            break;
+          case 'search_api':
+            $default_colorby_field_id = 'search_api_item_id';
+            $entity = $result->entity;
+            break;
+        }
+
         // Each date field.
         foreach ($aliases as $alias) {
+          $lang = 'en';
           // Each date field value.
-          $prop = "field_$alias";
-          foreach ($result->{$prop} as $date) {
-            $item = new StdClass();
-            $item->from = new DateObject($date['raw']['value'], 'UTC');
-            $item->from->setTimezone(new DateTimezone($date['raw']['timezone']));
-            $item->to = isset($date['raw']['value2']) ? new DateObject($date['raw']['value2'], 'UTC') : clone $item->from;
-            $item->to->setTimezone(new DateTimezone($date['raw']['timezone']));
-            $item->id = !empty($colorby_field) ? $colorby_field->render($result) : $result->{$view->base_field};
-            $item->data = $this->rendered_fields[$count];
-            unset($item->data[$alias]);
-
+          foreach ($entity->{$alias}[$lang] as $date) {
             // Link to node
-            // @TODO: make this views token-customizable
-            $item->url = ($view->base_table == 'node') ? "node/{$result->nid}" : NULL;
+            $url = "node/{$entity->vid}";
+            $id = !empty($colorby_field) ? $colorby_field->render($result) : $result->{$default_colorby_field_id};
+            $item = litecal_create_cal_item($date, $id, $this->rendered_fields[$count], $url);
 
             $items[] = $item;
           }
@@ -217,45 +240,6 @@ class litecal_plugin_style_litecal extends views_plugin_style {
       }
     }
 
-/*
-      // Collect from and to aliases for all date fields on this view
-      $aliases = array();
-      foreach ($view->date_info->date_fields as $date_field) {
-        $real_field = $date_field['view_field']->real_field;
-
-        if (!empty($date_field['view_field']->aliases[$real_field])) {
-          $aliases[$real_field]['from'] = $date_field['view_field']->aliases[$real_field];
-        }
-
-        if (!empty($date_field['view_field']->aliases["{$real_field}2"])) {
-          $aliases[$real_field]['to'] = $date_field['view_field']->aliases["{$real_field}2"];
-        }
-      }
-
-      if (!empty($aliases)) {
-        if (!empty($options['colorby']) && !empty($view->field[$options['colorby']])) {
-          $colorby_field = $view->field[$options['colorby']];
-        }
-        foreach ($view->result as $num => $row) {
-          foreach ($aliases as $alias) {
-            if (!empty($row->{$alias['from']})) {
-              $item = new StdClass();
-              $item->from = date_convert($row->{$alias['from']}, DATE_ISO, DATE_OBJECT);
-              $item->to = isset($alias['to'], $row->{$alias['to']}) ? date_convert($row->{$alias['to']}, DATE_ISO, DATE_OBJECT) : clone $item->from;
-              $item->id = !empty($colorby_field) ? $colorby_field->render($row) : $row->{$view->base_field};
-              $item->data = $vars['rows'][$num];
-
-              // Link to node
-              // @TODO: make this views token-customizable
-              $item->url = ($view->base_table == 'node') ? "node/{$row->nid}" : NULL;
-
-              $items[] = $item;
-              break;
-            }
-          }
-        }
-      }
-*/
     if (isset($litecal)) {
       $litecal->add($items);
       $litecal->build();
@@ -263,6 +247,19 @@ class litecal_plugin_style_litecal extends views_plugin_style {
       $vars = array_merge($vars, $litecal->built);
     }
   }
+}
+
+function litecal_create_cal_item($date, $id, $data, $url = NULL) {
+  $item = new StdClass();
+  $item->from = new DateObject($date['value'], $date['timezone_db']);
+  $item->from->setTimezone(new DateTimezone($date['timezone']));
+  $item->to = isset($date['value2']) ? new DateObject($date['value2'], $date['timezone_db']) : clone $item->from;
+  $item->to->setTimezone(new DateTimezone($date['timezone']));
+  $item->id = $id;
+  $item->data = $data;
+  if ($url) $item->url = $url;
+
+  return $item;
 }
 
 /**
@@ -316,9 +313,9 @@ class litecal_month {
 
     // Get the offset -- which must be %7. Note that the $to_offset must by < 7 as 
     // we should never add a full week.
-    $_to_weekday_offset = variable_get('date_first_day', 0) - 1;
+    $_to_weekday_offset = variable_get('date_first_day', 1) - 1;
     $_to_weekday_offset = ($_to_weekday_offset >= 0) ? $_to_weekday_offset : (7 + $_to_weekday_offset);
-    $from_offset = (7 - (variable_get('date_first_day', 0) - $from_weekday)) % 7;
+    $from_offset = (7 - (variable_get('date_first_day', 1) - $from_weekday)) % 7;
     $to_offset = (7 - ($to_weekday - $_to_weekday_offset)) % 7;
 
     // Get display from/to dates of calendar
