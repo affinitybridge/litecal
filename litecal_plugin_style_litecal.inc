@@ -21,6 +21,8 @@ class litecal_plugin_style_litecal extends views_plugin_style {
     $options['colorby'] = array('default' => 0);
     $options['quickadd'] = array('default' => 0);
 
+    $options['date_field'] = array('default' => 'created');
+
     return $options;
   }
 
@@ -57,8 +59,10 @@ class litecal_plugin_style_litecal extends views_plugin_style {
     );    
 
     // Quick add type
+    // TODO: THIS IS STILL BROKE
+    /*
     if (module_exists('prepopulate')) {
-      $nodetypes = node_get_types();
+      $nodetypes = node_type_get_types();
       $options = array(0 => '---'. t('Disabled') .'---');
       foreach (content_types() as $type => $info) {
         foreach ($info['fields'] as $field) {
@@ -75,6 +79,27 @@ class litecal_plugin_style_litecal extends views_plugin_style {
         '#default_value' => $this->options['quickadd'],
       );
     }
+    */
+
+    $options = array('created' => t('Post date (default)'));
+    foreach (field_info_fields() as $field_id => $field) {
+      if ($field['type'] == 'date') {
+        foreach ($field['bundles'] as $bundle => $types) {
+          if ($bundle === 'node') {
+            foreach ($types as $type) {
+              $options["$field_id"] = "$field_id ($type)";
+            }
+          }
+        }
+      }
+    }
+    $form['date_field'] = array(
+      '#title' => t('Date field'),
+      '#description' => t(''),
+      '#type' => 'select',
+      '#options' => $options,
+      '#default_value' => $this->options['date_field'],
+    );
   }
 
   /**
@@ -181,61 +206,41 @@ class litecal_plugin_style_litecal extends views_plugin_style {
 
     $items = array();
     $aliases = array();
-    $base = 'node';
-    // Find date fields and generate litecal items from them
-    if (!empty($view->field)) {
-      foreach ($view->field as $key => $field) {
-        // Gross special handling for each view base table source.
-        switch (get_class($field)) {
-          case 'views_handler_field_field':
-            $base = 'node';
-            if (isset($field->field_info) && $field->field_info['type'] == 'date') {
-              $aliases[] = $field->field;
-            }
-            break;
+    $base = ($view->base_field === 'search_api_id') ? 'search_api' : $view->base_table;
+    $date_field = $this->options['date_field'];
+    $lang = 'en';
 
-          case 'SearchApiViewsHandlerFieldDate':
-            $base = 'search_api';
-            $type = $field->definition['type'];
-            // Handling for repeating dates.
-            if (search_api_is_list_type($type)) {
-              $type = substr($type, 5, -1);
-            }
-
-            $pieces = explode(':', $field->real_field);
-            $aliases[] = $pieces[0];
-            break;
-        }
+    foreach ($view->result as $count => $result) {
+      $date = array();
+      // Special handling for each view base table source.
+      // TODO: This could be a bit nicer.
+      switch ($base) {
+        case 'node':
+          $default_colorby_field_id = $view->base_field;
+          $entity = $result->_field_data['nid']['entity'];
+          break;
+        case 'search_api':
+          $default_colorby_field_id = 'search_api_item_id';
+          $entity = $result->entity;
+          break;
       }
-    }
 
-    if (!empty($aliases)) {
-      // Each row.
-      foreach ($view->result as $count => $result) {
-        // More special handling for each view base table source.
-        switch ($base) {
-          case 'node':
-            $default_colorby_field_id = $view->base_field;
-            $entity = $result->_field_data['nid']['entity'];
-            break;
-          case 'search_api':
-            $default_colorby_field_id = 'search_api_item_id';
-            $entity = $result->entity;
-            break;
-        }
+      $url = "node/{$entity->vid}";
+      $id = !empty($colorby_field) ? $colorby_field->render($result) : $result->{$default_colorby_field_id};
 
-        // Each date field.
-        foreach ($aliases as $alias) {
-          $lang = 'en';
-          // Each date field value.
-          foreach ($entity->{$alias}[$lang] as $date) {
-            // Link to node
-            $url = "node/{$entity->vid}";
-            $id = !empty($colorby_field) ? $colorby_field->render($result) : $result->{$default_colorby_field_id};
-            $item = litecal_create_cal_item($date, $id, $this->rendered_fields[$count], $url);
+      // Defualt date field selected (created).
+      if ($date_field === 'created') {
+        $date['value'] = $entity->{$date_field};
+        $item = litecal_create_cal_item($date, $id, $this->rendered_fields[$count], $url);
+        $items[] = $item;
+      }
 
-            $items[] = $item;
-          }
+      // A Date module field has been selected.
+      else {
+        foreach ($entity->{$date_field}[$lang] as $date) {
+          // Link to node
+          $item = litecal_create_cal_item($date, $id, $this->rendered_fields[$count], $url);
+          $items[] = $item;
         }
       }
     }
@@ -250,11 +255,14 @@ class litecal_plugin_style_litecal extends views_plugin_style {
 }
 
 function litecal_create_cal_item($date, $id, $data, $url = NULL) {
+  $timezone_db = (isset($date['timezone_db'])) ? $date['timezone_db'] : NULL;
   $item = new StdClass();
-  $item->from = new DateObject($date['value'], $date['timezone_db']);
-  $item->from->setTimezone(new DateTimezone($date['timezone']));
+  $item->from = new DateObject($date['value'], $timezone_db);
   $item->to = isset($date['value2']) ? new DateObject($date['value2'], $date['timezone_db']) : clone $item->from;
-  $item->to->setTimezone(new DateTimezone($date['timezone']));
+  if ($timezone_db) {
+    $item->from->setTimezone(new DateTimezone($date['timezone']));
+    $item->to->setTimezone(new DateTimezone($date['timezone']));
+  }
   $item->id = $id;
   $item->data = $data;
   if ($url) $item->url = $url;
