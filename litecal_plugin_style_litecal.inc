@@ -208,7 +208,6 @@ class litecal_plugin_style_litecal extends views_plugin_style {
     $aliases = array();
     $base = ($view->base_field === 'search_api_id') ? 'search_api' : $view->base_table;
     $date_field = $this->options['date_field'];
-    $lang = 'en';
 
     foreach ($view->result as $count => $result) {
       $date = array();
@@ -235,9 +234,9 @@ class litecal_plugin_style_litecal extends views_plugin_style {
         $items[] = $item;
       }
 
-      // A Date module field has been selected.
+      // A Date module field has been selected.      
       else {
-        foreach ($entity->{$date_field}[$lang] as $date) {
+        foreach ($entity->{$date_field}[$entity->language] as $date) {
           // Link to node
           $item = litecal_create_cal_item($date, $id, $this->rendered_fields[$count], $url);
           $items[] = $item;
