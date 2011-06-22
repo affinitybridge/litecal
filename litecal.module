@@ -80,7 +80,10 @@ function template_preprocess_litecal_view(&$vars) {
  * Implementation of hook_date_views_tables().
  */
 function litecal_date_views_tables() {
-  $keys = _get_search_api_index_base_tables();
+  $keys = array();
+  if (module_exists('search_api')) {
+    $keys = _get_search_api_index_base_tables();
+  }
   return $keys;
 }
 
