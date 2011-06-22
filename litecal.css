@@ -212,7 +212,7 @@ div.litecal-compact .litecal-data { height:9px; }
     -webkit-border-bottom-right-radius:3px;
     }
 
-  div.litecal-compact .litecal-data {
+  div.litecal-compact .litecal-row {
     overflow:hidden;
     text-indent:-999px;
     }
