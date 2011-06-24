@@ -6,3 +6,4 @@ files[] = litecal_plugin_style_litecal.inc
 files[] = litecal-view.tpl.php
 files[] = litecal.theme.inc
 files[] = litecal.views_default.inc
+files[] = LitecalDay.inc
