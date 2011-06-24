@@ -7,4 +7,3 @@ files[] = litecal-view.tpl.php
 files[] = litecal.theme.inc
 files[] = litecal.views_default.inc
 files[] = LitecalDay.inc
-files[] = litecal_views_argument_date.inc
