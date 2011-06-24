@@ -15,7 +15,7 @@ function theme_litecal_timeitem($args) {
     case 'horizontal':
       $left = number_format($args['item']->start / $args['granularity'] * 100, 2);
       $width = number_format($args['item']->size / $args['granularity'] * 100, 2);
-      $attr = array('style' => "left:{$left}%; width:{$width}%;");
+      $attr['style'] = "left:{$left}%; width:{$width}%;";
       break;
   }
 

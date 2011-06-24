@@ -125,7 +125,8 @@ class litecal_plugin_style_litecal extends views_plugin_style {
     // Find argument handler
     $arguments = $this->view->display_handler->get_option('arguments');
     foreach ($arguments as $id => $handler) {
-      if ($id == 'date_argument') {
+      if ($id == 'date_argument_search_api_dateextender'
+        || $id == 'date_argument') {
         $valid = TRUE;
         break;
       }
