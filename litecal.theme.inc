@@ -4,30 +4,33 @@
  * Theme a timespan item.
  */
 function theme_litecal_timeitem($args) {
-  $item = $args['item'];
-  $granularity = $args['granularity'];
-
-  $left = number_format($item->start / $granularity * 100, 2);
-  $width = number_format($item->size / $granularity * 100, 2);
-
-  $attr = array('style' => "left:{$left}%; width:{$width}%;");
-
   $attr['class'] = 'litecal-item';
-  $attr['class'] .= $item->starts ? ' starts' : '';
-  $attr['class'] .= $item->ends ? ' ends' : '';
+  $attr['class'] .= $args['item']->starts ? ' starts' : '';
+  $attr['class'] .= $args['item']->ends ? ' ends' : '';
+  $attr['class'] .= " {$args['orientation']}";
+
+  switch ($args['orientation']) {
+    case 'vertical':
+      break;
+    case 'horizontal':
+      $left = number_format($args['item']->start / $args['granularity'] * 100, 2);
+      $width = number_format($args['item']->size / $args['granularity'] * 100, 2);
+      $attr = array('style' => "left:{$left}%; width:{$width}%;");
+      break;
+  }
 
   $data = "";
-  if (is_array($item->data)) {
-    foreach ($item->data as $field) {
+  if (is_array($args['item']->data)) {
+    foreach ($args['item']->data as $field) {
       $data .= $field;
     }
   } else {
-    $data = $item->data;
+    $data = $args['item']->data;
   }
 
   if (module_exists('crayon')) {
-    $attr['class'] .= ' crayon-anchor crayon-'. crayon_generate_index($item->id);
-    $popup = theme('crayon_popup', array($data, $item->id));
+    $attr['class'] .= ' crayon-anchor crayon-'. crayon_generate_index($args['item']->id);
+    $popup = theme('crayon_popup', array($data, $args['item']->id));
   }
   else {
     $attr['class'] .= ' color';
@@ -35,7 +38,7 @@ function theme_litecal_timeitem($args) {
   }
 
   if (!empty($item->url)) {
-    return l("$popup<span class='litecal-data'>{$data}</span>", $item->url, array('attributes' => $attr, 'html' => TRUE));
+    return l("$popup<span class='litecal-data'>{$data}</span>", $args['item']->url, array('attributes' => $attr, 'html' => TRUE));
   }
   else {
     $attr = drupal_attributes($attr);
@@ -47,7 +50,8 @@ function theme_litecal_timeitem($args) {
  * Theme all timeslots for a given timespan.
  */
 function theme_litecal_timeslots($args) {
-  switch ($args['timespan']->unit) {
+  $unit = $args['timespan']->unit;
+  switch ($unit) {
     case 'days':
       $format = 'j';
       break;
@@ -57,8 +61,8 @@ function theme_litecal_timeslots($args) {
   $date = clone $args['timespan']->from;
 
   for ($i = 0; $i < $args['timespan']->granularity; $i++) { 
-    $slots[] = theme('litecal_timeslot', array('timespan' => $args['timespan'], 'start' => $i, 'date' => $date, 'format' => $format, 'quickadd' => $args['quickadd']));
-    date_modify($date, "+1 {$args['timespan']->unit}");
+    $slots[] = theme("litecal_timeslot_$unit", array('timespan' => $args['timespan'], 'start' => $i, 'date' => $date, 'format' => $format, 'quickadd' => $args['quickadd']));
+    date_modify($date, "+1 $unit");
   }
   return $slots;
 }
@@ -66,7 +70,7 @@ function theme_litecal_timeslots($args) {
 /**
  * Theme a single timeslot.
  */
-function theme_litecal_timeslot($args) {
+function theme_litecal_timeslot_days($args) {
   $timespan = $args['timespan'];
   $start = $args['start'];
   $date = $args['date'];
@@ -131,15 +135,18 @@ function theme_litecal_timeslot($args) {
  * Theme a header, like days of the week for a month.
  */
 function theme_litecal_header($args) {
-  $label = $args['label'];
-  $start = $args['start'];
-  $granularity = $args['granularity'];
+  $attr = array();
 
-  $left = number_format($start / $granularity * 100, 2);
-  $width = number_format(1 / $granularity * 100, 2);
-
-  $attr = array('style' => "left:{$left}%; width:{$width}%;");
+  switch ($args['orientation']) {
+    case 'vertical':
+      break;
+    case 'horizontal':
+      $left = number_format($args['start'] / $args['granularity'] * 100, 2);
+      $width = number_format(1 / $args['granularity'] * 100, 2);
+      $attr = array('style' => "left:{$left}%; width:{$width}%;");
+      break;
+  }
   $attr = drupal_attributes($attr);
 
-  return "<div class='litecal-label' {$attr}>{$label}</div>";
+  return "<div class='litecal-label' {$attr}>{$args['label']}</div>";
 }

@@ -5,11 +5,13 @@
   <?php print theme('links', array('links' => $links)) ?>
 </div>
 
+<?php if (!empty($header)) : ?>
 <div class='litecal-header'>
 <?php foreach ($header as $label): ?>
   <?php print $label; ?>
 <?php endforeach; ?>
 </div>
+<?php endif; ?>
 
 <?php foreach ($timespans as $num => $timespan): ?>
   <?php
@@ -17,6 +19,7 @@
   $class .= ($num == 0) ? ' timespan-first' : '';
   $class .= ($num == count($timespans) - 1) ? ' timespan-last' : '';
   $class .= ' rows-'. count($timespan['rows']);
+  $class .= (isset($timespan['class'])) ? $timespan['class'] : '';
   ?>
   <div class='litecal-timespan <?php print $class ?>'>
 
