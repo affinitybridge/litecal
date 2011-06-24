@@ -134,6 +134,102 @@ function _get_search_api_index_base_tables() {
   return $keys;
 }
 
-function litecal_entity_property_info() {
+function _litecal_date_views_fields($base) {
+  $cid = 'date_views_fields_' . $base;
+  cache_clear_all($cid, 'cache_views');
 
+  // We use fields that provide filter handlers as our universe of possible
+  // fields of interest.
+  $all_fields = date_views_views_fetch_fields($base, 'filter');
+  
+  // Iterate over all the fields that Views knows about.
+  $fields = array();
+  foreach ((array) $all_fields as $alias => $val) {
+    // Set up some default values.
+    $granularity = array('year', 'month', 'day', 'hour', 'minute');
+    $tz_handling = 'site';
+    $related_fields = array();
+    $timezone_field = '';
+    $offset_field = '';
+    $rrule_field = '';
+    $delta_field = '';
+    $sql_type = DATE_UNIX;
+    $type = '';
+
+    $name = $alias;
+    $tmp = explode('.', $name);
+    $field_name = $tmp[1];
+    $table_name = $tmp[0];
+
+    $fromto = array(str_replace('.', '_', $name), str_replace('.', '_', $name));
+
+    // If we don't have a filter handler, we don't need to do anything more.
+    if (!$handler = views_get_handler($table_name, $field_name, 'filter')) {
+      continue; 
+    }
+    $handler = views_get_handler($table_name, $field_name, 'filter');
+    $handler_name = $handler->definition['handler'];
+    if ($handler_name == 'views_handler_filter_broken') {
+      continue;
+    }
+
+    // For Field module fields, get the date type.
+    $custom = array();
+    if (isset($handler->definition['real field'])) { //$handler->definition['group'] == "Date") {
+      $real_field = $handler->definition['real field'];
+      $pieces = explode(':', $real_field);
+      $field = field_info_field($pieces[0]);
+
+      switch ($field['type']) {
+       case 'date':
+          $type = 'cck_string';
+          $sql_type = DATE_ISO;
+          break;
+        case 'datestamp':
+          $type = 'cck_timestamp';
+          break;
+        case 'datetime':
+          $type = 'cck_datetime';
+          $sql_type = DATE_DATETIME;
+          break;          
+      }      
+      if (empty($type)) {
+        // If this is not a date field, nothing more to do.
+        continue;
+      }
+      
+      $db_info = date_api_database_info($field);      
+      $name = $table_name . "." . $field_name;
+      $granularity = !empty($field['granularity']) ? $field['granularity'] : array('year', 'month', 'day', 'hour', 'minute');
+
+      // Get the delta value into the query.
+      if ($field['cardinality'] != 1) {
+        array_push($related_fields, "$table_name.delta");
+        $delta_field = $table_name . '_delta';
+      }      
+    }
+
+    if (!empty($type)) {
+      $alias = str_replace('.', '_', $alias);
+      $fields['name'][$name] = array(
+        'type' => $type,
+        'sql_type' => $sql_type,
+        'label' => $val['group'] . ': ' . $val['title'],
+        'granularity' => $granularity,
+        'fullname' => $name,
+        'table_name' => $table_name,
+        'field_name' => $field_name,
+        'real_field' => $real_field,
+        'query_name' => $alias,
+        'fromto' => $fromto,
+        'tz_handling' => $tz_handling,
+        'offset_field' => $offset_field,
+        'timezone_field' => $timezone_field,
+        'rrule_field' => $rrule_field,
+        'related_fields' => $related_fields,
+        'delta_field' => $delta_field,
+      );
+    }
+  }
+  return $fields;
 }
