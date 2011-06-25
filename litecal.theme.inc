@@ -61,7 +61,8 @@ function theme_litecal_timeslots($args) {
   $date = clone $args['timespan']->from;
 
   for ($i = 0; $i < $args['timespan']->granularity; $i++) { 
-    $slots[] = theme("litecal_timeslot_$unit", array('timespan' => $args['timespan'], 'start' => $i, 'date' => $date, 'format' => $format, 'quickadd' => $args['quickadd']));
+    $slot_items = (isset($args['slot_items'][$i])) ? $args['slot_items'][$i] : array();
+    $slots[] = theme("litecal_timeslot_$unit", array('timespan' => $args['timespan'], 'start' => $i, 'date' => $date, 'format' => $format, 'quickadd' => $args['quickadd'], 'slot_items' => $slot_items));
     date_modify($date, "+1 $unit");
   }
   return $slots;
@@ -121,6 +122,12 @@ function theme_litecal_timeslot_days($args) {
       $link_attr['href'] = url("node/add/{$type}", $options);
       $add = "<span class='add'>". t('+ Add') ."</span>";
     }
+  }
+  elseif (!empty($args['slot_items'])) {
+    $date_arr = $date->toArray();
+    $date_arr['month'] = ($date_arr['month'] < 10) ? "0{$date_arr['month']}" : $date_arr['month'];
+    $date_arr['day'] = ($date_arr['day'] < 10) ? "0{$date_arr['day']}" : $date_arr['day'];
+    $link_attr['href'] = "/calendar/{$date_arr['year']}-{$date_arr['month']}-{$date_arr['day']}";
   }
   $link_attr = drupal_attributes($link_attr);
 

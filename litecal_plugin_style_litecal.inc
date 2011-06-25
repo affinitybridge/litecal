@@ -22,7 +22,10 @@ class litecal_plugin_style_litecal extends views_plugin_style {
     $options['quickadd'] = array('default' => 0);
 
     $options['date_field'] = array('default' => 'created');
-    $options['day_overlay'] = array('default' => FALSE);
+
+    if (module_exists('dialog')) {
+      $options['day_overlay'] = array('default' => FALSE);
+    }
 
     return $options;
   }
@@ -102,12 +105,14 @@ class litecal_plugin_style_litecal extends views_plugin_style {
       '#default_value' => $this->options['date_field'],
     );
 
-    $form['day_overlay'] = array(
-      '#title' => t('Day view overlay'),
-      '#description' => t('Render day listings to be presented within an overlay when the day has been selected.'),
-      '#type' => 'checkbox',
-      '#default_value' => $this->options['day_overlay'],
-    );
+    if (module_exists('dialog')) {
+      $form['day_overlay'] = array(
+        '#title' => t('Day view overlay'),
+        '#description' => t('Render day listings to be presented within an overlay when the day has been selected.'),
+        '#type' => 'checkbox',
+        '#default_value' => $this->options['day_overlay'],
+      );
+    }
   }
 
   /**
@@ -423,12 +428,15 @@ class litecal_month {
       foreach ($timespan->built as $timespan_row) {
         $rendered = array();
         foreach ($timespan_row as $k => $item) {
-          $rendered[] = theme('litecal_timeitem', array('item' => $item, 'granularity' => $timespan->granularity));
           // Extra processing for day overlay.
           if ($this->options['day_overlay']) {
             for ($slot = $item->start, $end = $item->end; $slot <= $end; $slot++) {
               $slot_items[$slot][] = $item;
             }
+          }
+          // Regular litecal function.
+          else {
+            $rendered[] = theme('litecal_timeitem', array('item' => $item, 'granularity' => $timespan->granularity));
           }
         }
         $timespan_rows[] = $rendered;

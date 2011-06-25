@@ -18,7 +18,7 @@ function litecal_theme($existing, $type, $theme, $path) {
   $registry = array();
   $registry['litecal_timeitem']['variables'] = array('item' => NULL, 'granularity' => NULL, 'orientation' => 'horizontal');
   $registry['litecal_timeslots']['variables'] = array('timespan' => NULL, 'quickadd' => array(), 'slot_items' => array());
-  $registry['litecal_timeslot_days']['variables'] = array('timespan' => NULL, 'start' => NULL, 'date' => NULL, 'format' => NULL, 'quickadd' => array());
+  $registry['litecal_timeslot_days']['variables'] = array('timespan' => NULL, 'start' => NULL, 'date' => NULL, 'format' => NULL, 'quickadd' => array(), 'slot_items' => array());
   $registry['litecal_timeslot_hours']['variables'] = array('timespan' => NULL, 'start' => NULL, 'date' => NULL, 'format' => NULL, 'quickadd' => array());
   $registry['litecal_header']['variables'] = array('label' => NULL, 'start' => NULL, 'granularity' => NULL, 'orientation' => 'horizontal');
 
