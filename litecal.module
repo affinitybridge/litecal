@@ -68,6 +68,73 @@ function litecal_views_plugins() {
  * Preprocessor for theme_litecal_view().
  */
 function template_preprocess_litecal_view(&$vars) {
+  drupal_add_library('dialog', 'dialog');
   $vars['class'] = implode($vars['classes_array'], ' ');
   $vars['view']->style_plugin->preprocess($vars);
+}
+
+/**
+ *
+ */
+function litecal_menu() {
+  $items = array();
+  $litecal_views = array();
+
+  $views = views_get_all_views();
+  foreach ($views as $id => $view) {
+    $current = array();
+    foreach ($view->display as $display) {
+      if ($display->display_plugin === 'page') {
+        $current['display'] = $display->id;
+        $current['path'] = $display->display_options['path'];
+      }
+      if (isset($display->display_options['style_plugin']) && $display->display_options['style_plugin'] === 'litecal') {
+        $current['is_litecal'] = TRUE;
+        if ($display->display_plugin !== 'default') {
+          $current['page_display'] = $display->id;
+        }
+      }
+    }
+    
+    if ($current['is_litecal'] && $current['path']) {
+      $litecal_views[$id] = $current;
+    }
+  }
+
+  foreach ($litecal_views as $view_id => $details) {
+    $path = "{$details['path']}/%/%dialog_js";
+    $items[$path] = array(
+      'title' => 'Litecal AJAX callback',
+      'type' => MENU_CALLBACK,
+      'page callback' => 'litecal_day_overlay_ajax_callback',
+      'page arguments' => array(2, $view_id, $details),
+      'access arguments' => array('access content'),
+    );
+  }
+
+  return $items;
+}
+
+function litecal_day_overlay_ajax_callback($ajax = FALSE, $view = '', $details = array()) {
+  // Construct the dialog's content.
+  $content = views_embed_view($view, $details['display'], arg(1));
+  if ($ajax) {
+    // Options that are passed to the jQuery UI dialog. See the jQuery UI
+    // website for more available options: http://jqueryui.com/demos/dialog/
+    $options = array(
+      'height' => '50%',
+      'width' => '50%',
+      'position' => 'center',
+      'title' => t('Dialog example'),
+    );
+
+    $commands = array();
+    $commands[] = dialog_command_display($content, $options);
+    //ajax_render($commands);
+    ajax_deliver(array('#type' => 'ajax', '#commands' => $commands));
+  }
+  else {
+    // If the user isn't using JavaScript, just show the normal page.
+    return $content;
+  }
 }

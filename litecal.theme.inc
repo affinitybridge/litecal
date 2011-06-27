@@ -127,7 +127,9 @@ function theme_litecal_timeslot_days($args) {
     $date_arr = $date->toArray();
     $date_arr['month'] = ($date_arr['month'] < 10) ? "0{$date_arr['month']}" : $date_arr['month'];
     $date_arr['day'] = ($date_arr['day'] < 10) ? "0{$date_arr['day']}" : $date_arr['day'];
-    $link_attr['href'] = "/calendar/{$date_arr['year']}-{$date_arr['month']}-{$date_arr['day']}";
+    // TODO: This path is hard-coded, need to pass as an argument from the view.
+    $link_attr['href'] = "calendar/{$date_arr['year']}-{$date_arr['month']}-{$date_arr['day']}/nojs";
+    $link_attr['class'] = " use-dialog use-ajax";
   }
   $link_attr = drupal_attributes($link_attr);
 
