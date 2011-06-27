@@ -441,6 +441,8 @@ class litecal_month {
         }
         $timespan_rows[] = $rendered;
       }
+      
+      $this->built['timespans'][$num]['class'] = ' rows-' . count($timespan_rows);
       $this->built['timespans'][$num]['rows'] = $timespan_rows;
       $this->built['timespans'][$num]['slots'] = theme('litecal_timeslots', array('timespan' => $timespan, 'quickadd' => $quickadd, 'slot_items' => $slot_items));
     }

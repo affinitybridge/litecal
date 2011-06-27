@@ -18,7 +18,6 @@
   $class = '';
   $class .= ($num == 0) ? ' timespan-first' : '';
   $class .= ($num == count($timespans) - 1) ? ' timespan-last' : '';
-  $class .= ' rows-'. count($timespan['rows']);
   $class .= (isset($timespan['class'])) ? $timespan['class'] : '';
   ?>
   <div class='litecal-timespan <?php print $class ?>'>
