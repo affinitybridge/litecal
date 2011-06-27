@@ -129,7 +129,7 @@ function theme_litecal_timeslot_days($args) {
     $date_arr['day'] = ($date_arr['day'] < 10) ? "0{$date_arr['day']}" : $date_arr['day'];
     // TODO: This path is hard-coded, need to pass as an argument from the view.
     $link_attr['href'] = "calendar/{$date_arr['year']}-{$date_arr['month']}-{$date_arr['day']}/nojs";
-    $link_attr['class'] = " use-dialog use-ajax";
+    $link_attr['class'] = "label use-dialog use-ajax has-event";
   }
   $link_attr = drupal_attributes($link_attr);
 
@@ -148,6 +148,7 @@ function theme_litecal_header($args) {
 
   switch ($args['orientation']) {
     case 'vertical':
+
       break;
     case 'horizontal':
       $left = number_format($args['start'] / $args['granularity'] * 100, 2);

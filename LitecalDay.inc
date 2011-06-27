@@ -103,11 +103,19 @@ class LitecalDay {
         $this->built['timespans'][$num]['class'] .= ' litecal-slot-today';
       }
 
+      static $zebra;
+      $zebra = !isset($zebra) ? TRUE : !$zebra;
+      $class = ($zebra) ? ' litecal-hour-even' : ' litecal-hour-odd';
+      if (isset($this->built['timespans'][$num]['class'])) {
+        $this->built['timespans'][$num]['class'] .= $class;
+      } else {
+        $this->built['timespans'][$num]['class'] = $class;
+      }
     }
 
     // Pass display style information on
     $display_style = !empty($this->options['style']) ? $this->options['style'] : 'full';
-    $this->built['class'] = "litecal-{$display_style}";
+    $this->built['class'] = "litecal-{$display_style} litecal-day";
 
 
     // Month title
@@ -148,9 +156,8 @@ function theme_litecal_timeslot_hours($args) {
   // Width
   $attr['style'] .= ' width:'. number_format(1 / $timespan->granularity * 100, 2) .'%';
 */
-
   // Classes
-  $attr['class'] = 'litecal-slot rows-'. count($timespan->built);
+  $attr['class'] .= ' litecal-slot rows-'. count($timespan->built);
 
   // Add class for today's slot.
   static $now;

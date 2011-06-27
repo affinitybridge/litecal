@@ -96,7 +96,7 @@ function litecal_menu() {
       }
     }
     
-    if ($current['is_litecal'] && $current['path']) {
+    if (isset($current['is_litecal']) && $current['is_litecal'] && $current['path']) {
       $litecal_views[$id] = $current;
     }
   }
