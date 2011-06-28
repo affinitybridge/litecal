@@ -1,7 +1,6 @@
 <div class='litecal <?php print $class ?>'>
 
 <div class='litecal-title clearfix'>
-  <h3 class='litecal-title'><?php print $title ?></h3>
   <?php print theme('links', array('links' => $links)) ?>
 </div>
 

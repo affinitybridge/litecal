@@ -85,13 +85,13 @@ function litecal_menu() {
     $current = array();
     foreach ($view->display as $display) {
       if ($display->display_plugin === 'page') {
-        $current['display'] = $display->id;
+        $current['display_id'] = $display->id;
         $current['path'] = $display->display_options['path'];
       }
       if (isset($display->display_options['style_plugin']) && $display->display_options['style_plugin'] === 'litecal') {
         $current['is_litecal'] = TRUE;
         if ($display->display_plugin !== 'default') {
-          $current['page_display'] = $display->id;
+          $current['display_id'] = $display->id;
         }
       }
     }
@@ -107,7 +107,7 @@ function litecal_menu() {
       'title' => 'Litecal AJAX callback',
       'type' => MENU_CALLBACK,
       'page callback' => 'litecal_day_overlay_ajax_callback',
-      'page arguments' => array(2, $view_id, $details),
+      'page arguments' => array(2, $views[$view_id], $details),
       'access arguments' => array('access content'),
     );
   }
@@ -116,22 +116,25 @@ function litecal_menu() {
 }
 
 function litecal_day_overlay_ajax_callback($ajax = FALSE, $view = '', $details = array()) {
+  if (!$view->access($details['display_id'])) {
+    //drupal_goto('404');
+    return;
+  }
+
   // Construct the dialog's content.
-  $content = views_embed_view($view, $details['display'], arg(1));
+  $content = $view->preview($details['display_id'], array(arg(1)));
+
   if ($ajax) {
     // Options that are passed to the jQuery UI dialog. See the jQuery UI
     // website for more available options: http://jqueryui.com/demos/dialog/
     $options = array(
-      'height' => '400px',
-      'width' => '50%',
       'position' => 'center',
-      'title' => t('Dialog example'),
+      'title' => $view->get_title(),
       'modal' => 'true',
     );
 
     $commands = array();
     $commands[] = dialog_command_display($content, $options);
-    //ajax_render($commands);
     ajax_deliver(array('#type' => 'ajax', '#commands' => $commands));
   }
   else {

@@ -116,16 +116,6 @@ class LitecalDay {
     // Pass display style information on
     $display_style = !empty($this->options['style']) ? $this->options['style'] : 'full';
     $this->built['class'] = "litecal-{$display_style} litecal-day";
-
-
-    // Month title
-    $days = date_week_days();
-    $day = date_format($this->from, 'j');
-    $months = date_month_names();
-    $month = date_format($this->from, 'n');
-    $year =  date_format($this->from, 'Y');
-    $this->built['title'] = t("Calendar for !month !day, !year", array('!month' => $months[(int) $month], '!day' => $day, '!year' => $year));
-
   }
 }
 

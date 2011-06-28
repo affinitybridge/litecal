@@ -241,7 +241,6 @@ class litecal_plugin_style_litecal extends views_plugin_style {
         $args[$arg_pos] = "{$next_year}-{$next_month}-{$next_day}";
         $link_next = array('title' => t('Next'), 'href' => $view->get_url($args));
 
-
         $litecal = new LitecalDay($arg_from, $arg_to, $options);
         break;
     }
@@ -308,7 +307,6 @@ class litecal_plugin_style_litecal extends views_plugin_style {
     if (isset($litecal)) {
       $litecal->add($items);
       $litecal->build();
-
       $vars = array_merge($vars, $litecal->built);
     }
   }
@@ -479,12 +477,6 @@ class litecal_month {
     foreach ($weekdays as $num => $label) {
       $this->built['header'][] = theme('litecal_header', array('label' => $label, 'start' => $num, 'granularity' => $total));
     }
-
-    // Month title
-    $months = date_month_names();
-    $month = date_format($this->from, 'n');
-    $year =  date_format($this->from, 'Y');
-    $this->built['title'] = $months[(int) $month] .' '. $year;
   }
 }
 
