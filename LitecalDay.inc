@@ -100,7 +100,7 @@ class LitecalDay {
       // Add class for today's slot.
       // TODO: Adjust for timezone.
       if ($now == date_format_date($timespan->from, 'custom', 'Y-m-d:H')) {
-        $this->built['timespans'][$num]['class'] .= ' litecal-slot-today';
+        //$this->built['timespans'][$num]['class'] .= ' litecal-slot-today';
       }
 
       static $zebra;
