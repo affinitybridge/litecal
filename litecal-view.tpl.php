@@ -13,6 +13,7 @@
 </div>
 <?php endif; ?>
 
+<?php if (!empty($timespans)) : ?>
 <?php foreach ($timespans as $num => $timespan): ?>
   <?php
   $class = '';
@@ -36,5 +37,10 @@
 
   </div>
 <?php endforeach; ?>
+<?php else : ?>
+  <div>
+    <p>There are no events occurring on this day.</p>
+  </div>
+<?php endif; ?>
 
 </div>

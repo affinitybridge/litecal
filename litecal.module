@@ -122,10 +122,11 @@ function litecal_day_overlay_ajax_callback($ajax = FALSE, $view = '', $details =
     // Options that are passed to the jQuery UI dialog. See the jQuery UI
     // website for more available options: http://jqueryui.com/demos/dialog/
     $options = array(
-      'height' => '50%',
+      'height' => '400px',
       'width' => '50%',
       'position' => 'center',
       'title' => t('Dialog example'),
+      'modal' => 'true',
     );
 
     $commands = array();
