@@ -80,7 +80,7 @@ function theme_litecal_timeslot_days($args) {
 
   $add = '';
   $attr = array('style' => '');
-  $link_attr = array('class' => 'label');
+  $slot_attr = array('class' => 'label');
 
   // Position
   if ($start < $timespan->granularity - 1) {
@@ -112,31 +112,33 @@ function theme_litecal_timeslot_days($args) {
 
   $attr = drupal_attributes($attr);
 
-  // Quickadd
-  if (!empty($quickadd['type'])) {
-    $type = str_replace('_', '-', $quickadd['type']);
-    $item = menu_get_item("node/add/{$type}");
-    if ($item && $item['access']) {
-      $options = array('query' => "edit[{$quickadd['field']}][0][value][date]=". date_format_date($date, 'custom', 'm/d/Y') . 
-        "&edit[{$quickadd['field']}][0][value][time]=" . date_format_date($date, 'custom', 'g:iA') ."&destination=" . $_GET['q']);
-      $link_attr['href'] = url("node/add/{$type}", $options);
-      $add = "<span class='add'>". t('+ Add') ."</span>";
-    }
-  }
-  elseif (!empty($args['slot_items'])) {
+  $options = array();
+  $options['html'] = TRUE;
+
+  if (!empty($args['slot_items'])) {
+    $slot_attr['class'] = "label use-dialog use-ajax has-event";
+
     $date_arr = $date->toArray();
     $date_arr['month'] = ($date_arr['month'] < 10) ? "0{$date_arr['month']}" : $date_arr['month'];
     $date_arr['day'] = ($date_arr['day'] < 10) ? "0{$date_arr['day']}" : $date_arr['day'];
-    $link_attr['href'] = "{$date_arr['year']}-{$date_arr['month']}-{$date_arr['day']}/nojs";
-    $link_attr['class'] = "label use-dialog use-ajax has-event";
+    // TODO: This is hardcoded.
+    $path = "calendar/{$date_arr['year']}-{$date_arr['month']}-{$date_arr['day']}/nojs";
+
+    $options['query'] = drupal_get_query_parameters();
   }
-  $link_attr = drupal_attributes($link_attr);
+  $options['attributes'] = $slot_attr;
 
   $formatted = date_format_date($date, 'custom', $format);
+  $name = "<span class='num'>{$formatted}</span>";
 
-  return "<div {$attr}>
-    <a $link_attr>{$add}<span class='num'>{$formatted}</span></a>
-  </div>";
+  if (isset($path)) {
+    return "<div {$attr}>" . l($name, $path, $options) . "</div>";
+  }
+
+  else {
+    $slot_attr = drupal_attributes($slot_attr);
+    return "<div {$attr}><span $slot_attr>$name</span></div>";
+  }
 }
 
 /**

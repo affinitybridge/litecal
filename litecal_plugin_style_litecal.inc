@@ -212,12 +212,10 @@ class litecal_plugin_style_litecal extends views_plugin_style {
         $prev_year = ($month == 1) ? $year - 1 : $year;
 
         $args[$arg_pos] = "{$prev_year}-{$prev_month}";
-        $links['prev'] = array('title' => t('Previous'), 'href' => $view->get_url($args));
+        $link_prev = array('title' => t('Previous'), 'href' => $view->get_url($args));
 
         $args[$arg_pos] = "{$next_year}-{$next_month}";
-        $links['next'] = array('title' => t('Next'), 'href' => $view->get_url($args));
-
-        $vars['links'] = $links;
+        $link_next = array('title' => t('Next'), 'href' => $view->get_url($args));
 
         $litecal = new litecal_month($arg_from, $arg_to, $options);
         break;
@@ -238,16 +236,26 @@ class litecal_plugin_style_litecal extends views_plugin_style {
         $prev_year = ($day == 1 && $month == 1) ? $year - 1 : $year;
 
         $args[$arg_pos] = "{$prev_year}-{$prev_month}-{$prev_day}";
-        $links['prev'] = array('title' => t('Previous'), 'href' => $view->get_url($args));
-
+        $link_prev = array('title' => t('Previous'), 'href' => $view->get_url($args));
+  
         $args[$arg_pos] = "{$next_year}-{$next_month}-{$next_day}";
-        $links['next'] = array('title' => t('Next'), 'href' => $view->get_url($args));
+        $link_next = array('title' => t('Next'), 'href' => $view->get_url($args));
 
-        $vars['links'] = $links;
 
         $litecal = new LitecalDay($arg_from, $arg_to, $options);
         break;
     }
+
+    $links['prev'] = $link_prev;
+    $args[$arg_pos] = "{$year}-{$month}-{$day}";
+    $links['day'] = array('title' => t('Day'), 'href' => $view->get_url($args));
+    // TODO: Week needs special handling.
+    //$links['week'] = array('title' => t('Week'), 'href' => $view->get_url($args));
+    $args[$arg_pos] = "{$year}-{$month}";
+    $links['month'] = array('title' => t('Month'), 'href' => $view->get_url($args));
+    $links['next'] = $link_next;
+
+    $vars['links'] = $links;
 
     $items = array();
     $aliases = array();
@@ -284,6 +292,13 @@ class litecal_plugin_style_litecal extends views_plugin_style {
       else {
         foreach ($entity->{$date_field}[$entity->language] as $date) {
           // Link to node
+          // TODO: There is definitely a nicer place to do what I am about to do,
+          // and it may only apply to Search API field handlers.
+          foreach (array_keys($this->rendered_fields[$count]) as $field) {
+            if (strpos($field, $date_field) !== FALSE) {
+              unset($this->rendered_fields[$count][$field]);
+            }
+          }
           $item = litecal_create_cal_item($date, $id, $this->rendered_fields[$count], $url);
           $items[] = $item;
         }
