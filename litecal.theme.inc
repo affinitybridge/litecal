@@ -37,7 +37,7 @@ function theme_litecal_timeitem($args) {
     $popup = '';
   }
 
-  if (!empty($item->url)) {
+  if (!empty($args['item']->url)) {
     return l("$popup<span class='litecal-data'>{$data}</span>", $args['item']->url, array('attributes' => $attr, 'html' => TRUE));
   }
   else {
