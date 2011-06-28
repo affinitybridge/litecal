@@ -248,9 +248,9 @@ class litecal_plugin_style_litecal extends views_plugin_style {
     $links['prev'] = $link_prev;
     $args[$arg_pos] = "{$year}-{$month}-{$day}";
     $links['day'] = array('title' => t('Day'), 'href' => $view->get_url($args));
-    // TODO: Week needs special handling.
-    //$links['week'] = array('title' => t('Week'), 'href' => $view->get_url($args));
     $args[$arg_pos] = "{$year}-{$month}";
+    // TODO: Week needs special handling, hijacking month for the time being.
+    $links['week'] = array('title' => t('Week'), 'href' => $view->get_url($args));
     $links['month'] = array('title' => t('Month'), 'href' => $view->get_url($args));
     $links['next'] = $link_next;
 
