@@ -293,11 +293,11 @@ class litecal_plugin_style_litecal extends views_plugin_style {
           // Link to node
           // TODO: There is definitely a nicer place to do what I am about to do,
           // and it may only apply to Search API field handlers.
-          foreach (array_keys($this->rendered_fields[$count]) as $field) {
-            if (strpos($field, $date_field) !== FALSE) {
-              unset($this->rendered_fields[$count][$field]);
-            }
-          }
+          //foreach (array_keys($this->rendered_fields[$count]) as $field) {
+          //  if (strpos($field, $date_field) !== FALSE) {
+              //unset($this->rendered_fields[$count][$field]);
+          //  }
+          //}
           $item = litecal_create_cal_item($date, $id, $this->rendered_fields[$count], $url);
           $items[] = $item;
         }
