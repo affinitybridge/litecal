@@ -21,24 +21,32 @@ function theme_litecal_timeitem($args) {
 
   $data = "";
   if (is_array($args['item']->data)) {
+    $field_count = 0; // Reset field index
     foreach ($args['item']->data as $field) {
-      $data .= $field;
+      // @TODO - Robin: Review this theme implementation with Tom. 
+      // $data .= $field;  
+      $field_count++;
+      $data .= "<div class='day-field-" . $field_count . "'>" . $field . "</div>";  
+      // dsm($args['item']);
     }
   } else {
     $data = $args['item']->data;
   }
 
-  if (module_exists('crayon')) {
-    $attr['class'] .= ' crayon-anchor crayon-'. crayon_generate_index($args['item']->id);
-    $popup = theme('crayon_popup', array($data, $args['item']->id));
-  }
-  else {
+  // $TODO - Robin: confirm with Tom that crayon module is obsolete
+  // if (module_exists('crayon')) {
+  //   $attr['class'] .= ' crayon-anchor crayon-'. crayon_generate_index($args['item']->id);
+  //   $popup = theme('crayon_popup', array($data, $args['item']->id));
+  // }
+  // else {
     $attr['class'] .= ' color';
     $popup = '';
-  }
+  // }
 
   if (!empty($args['item']->url)) {
-    return l("$popup<span class='litecal-data'>{$data}</span>", $args['item']->url, array('attributes' => $attr, 'html' => TRUE));
+    // @TODO - Robin: Review this theme implementation with Tom. 
+    // return l("$popup<span class='litecal-data'>{$data}</span>", $args['item']->url, array('attributes' => $attr, 'html' => TRUE));
+    return "<span class='litecal-data'>" . $data . "</span>"; 
   }
   else {
     $attr = drupal_attributes($attr);
