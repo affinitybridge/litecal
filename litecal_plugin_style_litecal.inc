@@ -292,7 +292,8 @@ class litecal_plugin_style_litecal extends views_plugin_style {
 
       // A Date module field has been selected.      
       else {
-        foreach ($entity->{$date_field}[$entity->language] as $date) {
+        $language = (isset($entity->language)) ? $entity->language : LANGUAGE_NONE;
+        foreach ($entity->{$date_field}[$language] as $date) {
           // Link to node
           // TODO: There is definitely a nicer place to do what I am about to do,
           // and it may only apply to Search API field handlers.
