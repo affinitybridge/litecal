@@ -89,10 +89,8 @@ class litecal_plugin_style_litecal extends views_plugin_style {
     foreach (field_info_fields() as $field_id => $field) {
       if ($field['type'] == 'date') {
         foreach ($field['bundles'] as $bundle => $types) {
-          if ($bundle === 'node') {
-            foreach ($types as $type) {
-              $options["$field_id"] = "$field_id ($type)";
-            }
+          foreach ($types as $type) {
+            $options["$field_id"] = "$field_id ($type)";
           }
         }
       }
@@ -280,7 +278,8 @@ class litecal_plugin_style_litecal extends views_plugin_style {
           break;
       }
 
-      $url = "node/{$entity->vid}";
+      // TODO: This needs to be made more generic.
+      $url = "node/{$entity->occasion_parent[LANGUAGE_NONE][0]}";
       $id = !empty($colorby_field) ? $colorby_field->render($result) : $result->{$default_colorby_field_id};
 
       // Defualt date field selected (created).
@@ -294,14 +293,6 @@ class litecal_plugin_style_litecal extends views_plugin_style {
       else {
         $language = (isset($entity->language)) ? $entity->language : LANGUAGE_NONE;
         foreach ($entity->{$date_field}[$language] as $date) {
-          // Link to node
-          // TODO: There is definitely a nicer place to do what I am about to do,
-          // and it may only apply to Search API field handlers.
-          //foreach (array_keys($this->rendered_fields[$count]) as $field) {
-          //  if (strpos($field, $date_field) !== FALSE) {
-              //unset($this->rendered_fields[$count][$field]);
-          //  }
-          //}
           $item = litecal_create_cal_item($date, $id, $this->rendered_fields[$count], $url);
           $items[] = $item;
         }
