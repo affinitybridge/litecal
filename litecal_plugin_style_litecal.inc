@@ -217,6 +217,9 @@ class litecal_plugin_style_litecal extends views_plugin_style {
         $args[$arg_pos] = "{$next_year}-{$next_month}";
         $link_next = array('title' => t('Next'), 'href' => $view->get_url($args));
 
+        if ($options['day_overlay']) {
+          $options['url'] = $view->get_url();
+        }
         $litecal = new litecal_month($arg_from, $arg_to, $options);
         break;
       case 'day':
@@ -444,6 +447,7 @@ class litecal_month {
           // Extra processing for day overlay.
           if ($this->options['day_overlay']) {
             for ($slot = $item->start, $end = $item->end; $slot <= $end; $slot++) {
+              $timespan->url = $this->options['url'];
               $slot_items[$slot][] = $item;
             }
           }
