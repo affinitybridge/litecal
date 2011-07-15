@@ -188,18 +188,19 @@ class litecal_plugin_style_litecal extends views_plugin_style {
       $arg_to = $date_range[1];
     }
 
-    $date = new DateObject($arg);
+    $date = clone $arg_from;
     $date_arr = $date->toArray();
     $year = $date_arr['year'];
     $month = $date_arr['month'];
     $day = $date_arr['day'];
+    $week = date_week($date->format('Y-m-d'));
+    $no_weeks = date_weeks_in_year($year);
 
 
     // Generate the right calendar type based on date granularity
     // TODO: This could definitely be made prettier.
     switch ($arg_granularity) {
       case 'month':
-      case 'week':
         // Generate Prev / Next links
         $next_month = ($month == 12) ? 1 : $month + 1;
         $next_month = ($next_month < 10) ? "0$next_month" : $next_month;
@@ -220,6 +221,23 @@ class litecal_plugin_style_litecal extends views_plugin_style {
         }
         $litecal = new litecal_month($arg_from, $arg_to, $options);
         break;
+
+      case 'week':
+        $next_week = ($week == $no_weeks) ? 1 : $week + 1;
+        $next_year = ($next_week == 1) ? $year + 1 : $year;
+
+        $prev_week = ($week == 1) ? date_weeks_in_year($year - 1) : $week - 1;
+        $prev_year = ($week == 1) ? $year - 1 : $year;
+
+        $args[$arg_pos] = "{$prev_year}-W{$prev_week}";
+        $link_prev = array('title' => t('Previous'), 'href' => $view->get_url($args));
+
+        $args[$arg_pos] = "{$next_year}-W{$next_week}";
+        $link_next = array('title' => t('Next'), 'href' => $view->get_url($args));
+
+        $litecal = new LitecalWeek($arg_from, $arg_to, $options);
+        break;
+
       case 'day':
         // Generate Prev / Next links
         $next_day = ($day == count(date_days(TRUE, $month))) ? 1 : $day + 1;
@@ -249,9 +267,9 @@ class litecal_plugin_style_litecal extends views_plugin_style {
     $links['prev'] = $link_prev;
     $args[$arg_pos] = "{$year}-{$month}-{$day}";
     $links['day'] = array('title' => t('Day'), 'href' => $view->get_url($args));
-    $args[$arg_pos] = "{$year}-{$month}";
-    // TODO: Week needs special handling, hijacking month for the time being.
+    $args[$arg_pos] = "{$year}-W{$week}";
     $links['week'] = array('title' => t('Week'), 'href' => $view->get_url($args));
+    $args[$arg_pos] = "{$year}-{$month}";
     $links['month'] = array('title' => t('Month'), 'href' => $view->get_url($args));
     $links['next'] = $link_next;
 
