@@ -21,12 +21,14 @@ function litecal_theme($existing, $type, $theme, $path) {
   $registry['litecal_timeslot_days']['variables'] = array('timespan' => NULL, 'start' => NULL, 'date' => NULL, 'format' => NULL, 'quickadd' => array(), 'slot_items' => array());
   $registry['litecal_timeslot_hours']['variables'] = array('timespan' => NULL, 'start' => NULL, 'date' => NULL, 'format' => NULL, 'quickadd' => array());
   $registry['litecal_header']['variables'] = array('label' => NULL, 'start' => NULL, 'granularity' => NULL, 'orientation' => 'horizontal');
+  $registry['litecal_column_header']['variables'] = array('label' => NULL, 'attributes' => array());
 
   $registry['litecal_timeitem']['file'] =
   $registry['litecal_timeslots']['file'] =
   $registry['litecal_timeslot_days']['file'] =
   $registry['litecal_timeslot_hours']['file'] =
-  $registry['litecal_header']['file'] = 'litecal.theme.inc';
+  $registry['litecal_header']['file'] =
+  $registry['litecal_column_header']['file'] = 'litecal.theme.inc';
 
   return $registry;
 }
@@ -131,6 +133,7 @@ function litecal_day_overlay_ajax_callback($ajax = FALSE, $view = '', $details =
       'position' => 'center',
       'title' => $view->get_title(),
       'modal' => 'true',
+      'width' => 766,
     );
 
     $commands = array();
@@ -141,4 +144,64 @@ function litecal_day_overlay_ajax_callback($ajax = FALSE, $view = '', $details =
     // If the user isn't using JavaScript, just show the normal page.
     return $content;
   }
+}
+
+/**
+ * Convoluted method of handling column headers for inline fields.
+ * Concatenates the labels of inline fields, seperated with the seperator.
+ */
+function litecal_get_labels($fields, $row_options = array()) {
+  $i = 0;
+  $keys = array_keys($fields);
+  $labels = array();
+  $inline = FALSE;
+  $inline_fields = (isset($row_options['inline'])) ? $row_options['inline'] : array();
+
+  foreach ($fields as $field) {
+    if ($field->options['exclude']) {
+      continue;
+    }
+
+    $next = (isset($keys[++$i])) ? $fields[$keys[$i]] : FALSE;
+
+    // Condition for detecting the beginning of an inline sequence.
+    if (!$inline && $next && isset($inline_fields[$field->field]) && isset($inline_fields[$next->field])) {
+      $key = "";
+      $label = "";
+      $inline = TRUE;
+    }
+
+    $tmp = (!empty($field->options['label'])) ? $field->options['label'] : "";
+    // If inline, concatenate.
+    if ($inline) {
+      $key .= $field->field;
+      $label .= $tmp;
+    }
+    // Otherwise set the label.
+    else {
+      $key = $field->field;
+      $label = $tmp;
+    }
+
+    // Condition for detecting the end of an inline sequence.
+    if (!$next || ($next && isset($inline_fields[$field->field]) && !isset($inline_fields[$next->field]))) {
+      $inline = FALSE;
+    }
+
+    // Finally, once inline is over or if there is no inline, set the label in 
+    // the return array.
+    if (!$inline) {
+      $labels[$key] = $label;
+    }
+    // Might as well include the seperator.
+    elseif ($next->options['label'] !== "") {
+      $label .= $row_options['separator'];
+    }
+
+    if ($inline) {
+      $key .= "_";
+    }
+  }
+
+  return $labels;
 }

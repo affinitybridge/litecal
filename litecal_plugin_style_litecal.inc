@@ -196,7 +196,8 @@ class litecal_plugin_style_litecal extends views_plugin_style {
     $week = date_week($date->format('Y-m-d'));
     $no_weeks = date_weeks_in_year($year);
 
-
+    $options['headers'] = litecal_get_labels($view->field, $view->style_plugin->row_plugin->options);
+    
     // Generate the right calendar type based on date granularity
     // TODO: This could definitely be made prettier.
     switch ($arg_granularity) {
@@ -282,6 +283,7 @@ class litecal_plugin_style_litecal extends views_plugin_style {
     $overlay = $options['day_overlay'];
 
     foreach ($view->result as $count => $result) {
+      //_p($result, '$result');
       $date = array();
       // Special handling for each view base table source.
       // TODO: This could be a bit nicer.
@@ -296,14 +298,12 @@ class litecal_plugin_style_litecal extends views_plugin_style {
           break;
       }
 
-      // TODO: This needs to be made more generic.
-      $url = "node/{$entity->occasion_parent[LANGUAGE_NONE][0]}";
       $id = !empty($colorby_field) ? $colorby_field->render($result) : $result->{$default_colorby_field_id};
 
       // Defualt date field selected (created).
       if ($date_field === 'created') {
         $date['value'] = $entity->{$date_field};
-        $item = litecal_create_cal_item($date, $id, $this->rendered_fields[$count], $url);
+        $item = litecal_create_cal_item($date, $id, $vars['rows'][$count]);
         $items[] = $item;
       }
 
@@ -311,7 +311,7 @@ class litecal_plugin_style_litecal extends views_plugin_style {
       else {
         $language = (isset($entity->language)) ? $entity->language : LANGUAGE_NONE;
         foreach ($entity->{$date_field}[$language] as $date) {
-          $item = litecal_create_cal_item($date, $id, $this->rendered_fields[$count], $url);
+          $item = litecal_create_cal_item($date, $id, $vars['rows'][$count]);
           $items[] = $item;
         }
       }
@@ -325,7 +325,7 @@ class litecal_plugin_style_litecal extends views_plugin_style {
   }
 }
 
-function litecal_create_cal_item($date, $id, $data, $url = NULL) {
+function litecal_create_cal_item($date, $id, $data) {
   $timezone_db = (isset($date['timezone_db'])) ? $date['timezone_db'] : NULL;
   $item = new StdClass();
   $item->from = new DateObject($date['value'], $timezone_db);
@@ -336,7 +336,6 @@ function litecal_create_cal_item($date, $id, $data, $url = NULL) {
   }
   $item->id = $id;
   $item->data = $data;
-  if ($url) $item->url = $url;
 
   return $item;
 }
@@ -430,7 +429,7 @@ class litecal_month {
     $this->items = array_merge($this->items, $items);
     foreach ($items as $item) {
       foreach ($this->timespans as $timespan) {
-        $timespan->add($item->from, $item->to, $item->id, $item->url, $item->data);
+        $timespan->add($item->from, $item->to, $item->id, $item->data);
       }
     }
   }
@@ -584,17 +583,14 @@ class litecal_timespan {
    *   A date object that represents the end time of the item.
    * @param $id
    *   An identifier for use in coloring items.
-   * @param $url
-   *   The url to link this item to.
    * @param $data
    *   Any additional data to be displayed in the item.
    */
-  function add($from, $to, $id, $url = NULL, $data = array()) {
+  function add($from, $to, $id, $data = array()) {
     $item = $this->convert($from, $to);
     if ($item) {
       $item->id = $id;
       $item->data = $data;
-      $item->url = $url;
 
       foreach ($this->vacant as $k => $v) {
         if ($v->contains($item)) {
@@ -658,7 +654,6 @@ class litecal_timeitem {
 
   // Content + metadata
   var $id;
-  var $url;
   var $data;
   var $type;
 

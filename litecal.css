@@ -156,6 +156,10 @@ div.litecal .litecal-row {
 
     div.litecal .litecal-data * { display:inline; }
 
+div.litecal .litecal-column-header {
+  float: left;
+}
+
 /**
  * Litecal Compact
  */

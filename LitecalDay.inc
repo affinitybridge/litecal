@@ -55,7 +55,7 @@ class LitecalDay {
     $this->items = array_merge($this->items, $items);
     foreach ($items as $item) {
       foreach ($this->timespans as $timespan) {
-        $timespan->add($item->from, $item->to, $item->id, $item->url, $item->data);
+        $timespan->add($item->from, $item->to, $item->id, $item->data);
       }
     }
   }
@@ -96,22 +96,43 @@ class LitecalDay {
         continue;
       }
 
+
       $this->built['timespans'][$num]['rows'] = $timespan_rows;
       $this->built['timespans'][$num]['slots'] = array($headers[$num]);
 
+      $class = "";
       // Add class for today's slot.
       if ($now == date_format_date($timespan->from, 'custom', 'Y-m-d:H')) {
-        $this->built['timespans'][$num]['class'] .= ' litecal-slot-today';
+        $class .= ' litecal-slot-today';
       }
 
       static $zebra;
       $zebra = !isset($zebra) ? TRUE : !$zebra;
-      $class = ($zebra) ? ' litecal-hour-even' : ' litecal-hour-odd';
+      $class .= ($zebra) ? ' litecal-hour-even' : ' litecal-hour-odd';
+
       if (isset($this->built['timespans'][$num]['class'])) {
         $this->built['timespans'][$num]['class'] .= $class;
       } else {
         $this->built['timespans'][$num]['class'] = $class;
       }
+    }
+
+    $headers = $this->options['headers'];
+    $total = count($headers);
+    $count = 0;
+    foreach ($headers as $fieldname => $label) {
+      $attributes = array(
+        'class' => 'litecal-header-' . str_replace('_', '-', $fieldname),
+      );
+
+      if ($count == 0) $attributes['class'] .= " litecal-column-header-first";
+      elseif ($count == $total - 1) $attributes['class'] .= " litecal-column-header-last";
+
+      $this->built['header'][] = theme('litecal_column_header', array(
+        'label' => $label,
+        'attributes' => $attributes,
+      ));
+      $count++;
     }
 
     // Pass display style information on

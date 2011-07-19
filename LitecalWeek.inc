@@ -54,7 +54,7 @@ class LitecalWeek {
     $this->items = array_merge($this->items, $items);
     foreach ($items as $item) {
       foreach ($this->timespans as $timespan) {
-        $timespan->add($item->from, $item->to, $item->id, $item->url, $item->data);
+        $timespan->add($item->from, $item->to, $item->id, $item->data);
       }
     }
   }
@@ -116,6 +116,28 @@ class LitecalWeek {
       } else {
         $this->built['timespans'][$num]['class'] = $class;
       }
+    }
+
+    $headers = $this->options['headers'];
+    $total = count($headers);
+    $this->built['header'][] = theme('litecal_column_header', array(
+      'label' => t('Date'),
+      'attributes' => array(
+        'class' => 'litecal-column-header-first litecal-header-date',
+      )
+    ));
+    $count = 0;
+    foreach ($headers as $fieldname => $label) {
+      $attributes = array(
+        'class' => 'litecal-header-' . str_replace('_', '-', $fieldname),
+      );
+      if ($count == $total - 1) $attributes['class'] .= " litecal-column-header-last";
+
+      $this->built['header'][] = theme('litecal_column_header', array(
+        'label' => $label,
+        'attributes' => $attributes,
+      ));
+      $count++;
     }
 
     // Pass display style information on
