@@ -1,9 +1,5 @@
 <div class='litecal <?php print $class ?>'>
 
-<div class='litecal-title clearfix'>
-  <?php print theme('links', array('links' => $links)) ?>
-</div>
-
 <?php if (!empty($header)) : ?>
 <div class='litecal-header'>
 <?php foreach ($header as $label): ?>

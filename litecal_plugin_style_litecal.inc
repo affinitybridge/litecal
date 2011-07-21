@@ -151,9 +151,6 @@ class litecal_plugin_style_litecal extends views_plugin_style {
     $links = array();
 
     // Find the date_api argument handler.
-    $arg_pos = 0;
-    $args = isset($view->args) ? $view->args : array();
-
     $date_argument_handler = NULL;
     foreach ($view->argument as $argument => $handler) {
       // TODO: This probably isn't a great value to use...
@@ -162,7 +159,6 @@ class litecal_plugin_style_litecal extends views_plugin_style {
         $date_argument_handler = $handler;
         break;
       }
-      $arg_pos++;
     }
 
     $valid_argument = FALSE;
@@ -188,35 +184,12 @@ class litecal_plugin_style_litecal extends views_plugin_style {
       $arg_to = $date_range[1];
     }
 
-    $date = clone $arg_from;
-    $date_arr = $date->toArray();
-    $year = $date_arr['year'];
-    $month = $date_arr['month'];
-    $day = $date_arr['day'];
-    $week = date_week($date->format('Y-m-d'));
-    $no_weeks = date_weeks_in_year($year);
-
     $options['headers'] = litecal_get_labels($view->field, $view->style_plugin->row_plugin->options);
     
     // Generate the right calendar type based on date granularity
     // TODO: This could definitely be made prettier.
     switch ($arg_granularity) {
       case 'month':
-        // Generate Prev / Next links
-        $next_month = ($month == 12) ? 1 : $month + 1;
-        $next_month = ($next_month < 10) ? "0$next_month" : $next_month;
-        $next_year = ($month == 12) ? $year + 1 : $year;
-
-        $prev_month = ($month == 1) ? 12 : $month - 1;
-        $prev_month = ($prev_month < 10) ? "0$prev_month" : $prev_month;
-        $prev_year = ($month == 1) ? $year - 1 : $year;
-
-        $args[$arg_pos] = "{$prev_year}-{$prev_month}";
-        $link_prev = array('title' => t('Previous'), 'href' => $view->get_url($args));
-
-        $args[$arg_pos] = "{$next_year}-{$next_month}";
-        $link_next = array('title' => t('Next'), 'href' => $view->get_url($args));
-
         if ($options['day_overlay']) {
           $options['url'] = $view->get_url();
         }
@@ -224,57 +197,13 @@ class litecal_plugin_style_litecal extends views_plugin_style {
         break;
 
       case 'week':
-        $next_week = ($week == $no_weeks) ? 1 : $week + 1;
-        $next_year = ($next_week == 1) ? $year + 1 : $year;
-
-        $prev_week = ($week == 1) ? date_weeks_in_year($year - 1) : $week - 1;
-        $prev_year = ($week == 1) ? $year - 1 : $year;
-
-        $args[$arg_pos] = "{$prev_year}-W{$prev_week}";
-        $link_prev = array('title' => t('Previous'), 'href' => $view->get_url($args));
-
-        $args[$arg_pos] = "{$next_year}-W{$next_week}";
-        $link_next = array('title' => t('Next'), 'href' => $view->get_url($args));
-
         $litecal = new LitecalWeek($arg_from, $arg_to, $options);
         break;
 
       case 'day':
-        // Generate Prev / Next links
-        $next_day = ($day == count(date_days(TRUE, $month))) ? 1 : $day + 1;
-        $next_day = ($next_day < 10) ? "0$next_day" : $next_day;
-        $next_month = ($next_day == 1) ? $month + 1 : $month;
-        $next_month = ($next_month > 12) ? 1 : $next_month;
-        $next_month = ($next_month < 10) ? "0$next_month" : $next_month;
-        $next_year = ($next_day == 1 && $next_month == 1) ? $year + 1 : $year;
-
-        $prev_day = ($day == 1) ? count(date_days(TRUE, $month - 1)) : $day - 1;
-        $prev_day = ($prev_day < 10) ? "0$prev_day" : $prev_day;
-        $prev_month = ($day == 1) ? $month - 1 : $month;
-        $prev_month = ($prev_month == 0) ? 12 : $month;
-        $prev_month = ($prev_month < 10) ? "0$prev_month" : $prev_month;
-        $prev_year = ($day == 1 && $month == 1) ? $year - 1 : $year;
-
-        $args[$arg_pos] = "{$prev_year}-{$prev_month}-{$prev_day}";
-        $link_prev = array('title' => t('Previous'), 'href' => $view->get_url($args));
-  
-        $args[$arg_pos] = "{$next_year}-{$next_month}-{$next_day}";
-        $link_next = array('title' => t('Next'), 'href' => $view->get_url($args));
-
         $litecal = new LitecalDay($arg_from, $arg_to, $options);
         break;
     }
-
-    $links['prev'] = $link_prev;
-    $args[$arg_pos] = "{$year}-{$month}-{$day}";
-    $links['day'] = array('title' => t('Day'), 'href' => $view->get_url($args));
-    $args[$arg_pos] = "{$year}-W{$week}";
-    $links['week'] = array('title' => t('Week'), 'href' => $view->get_url($args));
-    $args[$arg_pos] = "{$year}-{$month}";
-    $links['month'] = array('title' => t('Month'), 'href' => $view->get_url($args));
-    $links['next'] = $link_next;
-
-    $vars['links'] = $links;
 
     $items = array();
     $aliases = array();
@@ -283,7 +212,6 @@ class litecal_plugin_style_litecal extends views_plugin_style {
     $overlay = $options['day_overlay'];
 
     foreach ($view->result as $count => $result) {
-      //_p($result, '$result');
       $date = array();
       // Special handling for each view base table source.
       // TODO: This could be a bit nicer.

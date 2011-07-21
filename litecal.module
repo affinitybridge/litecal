@@ -117,11 +117,25 @@ function litecal_menu() {
   return $items;
 }
 
+function litecal_disable_pager(&$view) {
+  if ($view->display_handler->options['pager']['type'] !== 'none') {
+    $view->display_handler->options['pager'] = array(
+      'type' => 'none',
+      'options' => array('offset' => 0),
+    );
+    unset($view->query->pager);
+  }
+}
+
 function litecal_day_overlay_ajax_callback($ajax = FALSE, $view = '', $details = array()) {
   if (!$view->access($details['display_id'])) {
     //drupal_goto('404');
     return;
   }
+
+  // Disable any pagers.
+  litecal_disable_pager($view);
+  //$view->date_info->hide_nav = TRUE;
 
   // Construct the dialog's content.
   $content = $view->preview($details['display_id'], array(arg(1)));
@@ -129,6 +143,8 @@ function litecal_day_overlay_ajax_callback($ajax = FALSE, $view = '', $details =
   if ($ajax) {
     // Options that are passed to the jQuery UI dialog. See the jQuery UI
     // website for more available options: http://jqueryui.com/demos/dialog/
+    // TODO: These options either need to be configurable in the litecal style
+    //       settings or passed through an overridable theme function...
     $options = array(
       'position' => 'center',
       'title' => $view->get_title(),
