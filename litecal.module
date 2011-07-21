@@ -129,7 +129,7 @@ function litecal_disable_pager(&$view) {
 
 function litecal_day_overlay_ajax_callback($ajax = FALSE, $view = '', $details = array()) {
   if (!$view->access($details['display_id'])) {
-    //drupal_goto('404');
+    drupal_access_denied();
     return;
   }
 
