@@ -62,29 +62,6 @@ class litecal_plugin_style_litecal extends views_plugin_style {
       '#default_value' => $this->options['colorby'],
     );    
 
-    // Quick add type
-    // TODO: THIS IS STILL BROKE
-    /*
-    if (module_exists('prepopulate')) {
-      $nodetypes = node_type_get_types();
-      $options = array(0 => '---'. t('Disabled') .'---');
-      foreach (content_types() as $type => $info) {
-        foreach ($info['fields'] as $field) {
-          if ($field['type'] == 'date') {
-            $options["{$field['type_name']}:{$field['field_name']}"] = check_plain($nodetypes[$field['type_name']]->name);
-          }
-        }
-      }
-      $form['quickadd'] = array(
-        '#title' => t('Quickadd type'),
-        '#description' => t('Choose the content type to use for quick event add links.'),
-        '#type' => 'select',
-        '#options' => $options,
-        '#default_value' => $this->options['quickadd'],
-      );
-    }
-    */
-
     $options = array('created' => t('Post date (default)'));
     foreach (field_info_fields() as $field_id => $field) {
       if ($field['type'] == 'date') {
@@ -393,7 +370,13 @@ class litecal_month {
             $rendered[] = theme('litecal_timeitem', array('item' => $item, 'granularity' => $timespan->granularity));
           }
         }
-        $timespan_rows[] = $rendered;
+        if (!$this->options['day_overlay']) {
+          $timespan_rows[] = $rendered;
+        }
+      }
+      
+      if ($this->options['day_overlay']) {
+        $timespan->built = array();
       }
       
       $this->built['timespans'][$num]['class'] = ' rows-' . count($timespan_rows);
