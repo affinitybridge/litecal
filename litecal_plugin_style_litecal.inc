@@ -580,9 +580,6 @@ class litecal_timeitem {
    */
   function __construct($start, $end, $type = LITECAL_EMPTY) {
     $this->start = $start;
-    // If $start == $end, it means this item doesn't have an end set, in which 
-    // case default to 0.
-    //$this->end = ($type == LITECAL_ITEM && ($start == $end)) ? 0 : $end;
     $this->end = $end;
     $this->size = $end - $start + 1;
     $this->type = $type;
