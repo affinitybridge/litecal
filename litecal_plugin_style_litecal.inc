@@ -214,8 +214,7 @@ class litecal_plugin_style_litecal extends views_plugin_style {
 
       // A Date module field has been selected.      
       else {
-        $language = (isset($entity->language)) ? $entity->language : LANGUAGE_NONE;
-        foreach ($entity->{$date_field}[$language] as $date) {
+        foreach ($entity->{$date_field}[LANGUAGE_NONE] as $date) {
           $item = litecal_create_cal_item($date, $id, $vars['rows'][$count]);
           $items[] = $item;
         }
