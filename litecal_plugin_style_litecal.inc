@@ -21,7 +21,7 @@ class litecal_plugin_style_litecal extends views_plugin_style {
     $options['colorby'] = array('default' => 0);
     $options['quickadd'] = array('default' => 0);
 
-    $options['date_field'] = array('default' => 'created');
+    $options['date_field'] = array('default' => 'none');
 
     if (module_exists('dialog')) {
       $options['day_overlay'] = array('default' => FALSE);
@@ -37,19 +37,19 @@ class litecal_plugin_style_litecal extends views_plugin_style {
     parent::options_form($form, $form_state);
 
     // Style types
-    $options = array(
-      'full' => t('Full calendar'),
-      'compact' => t('Compact calendar'),
-    );
     $form['style'] = array(
       '#title' => t('Display style'),
       '#description' => t('Choose the display style for this litecal.'),
       '#type' => 'select',
-      '#options' => $options,
+      '#options' => array(
+        'full' => t('Full calendar'),
+        'compact' => t('Compact calendar'),
+      ),
       '#default_value' => $this->options['style'],
     );
 
     // Style types
+    // TODO: Remove this.
     $fields = array(0 => '<'. t('None') .'>');
     foreach ($this->view->display_handler->get_option('fields') as $field => $definition) {
       $fields[$field] = !empty($definition['label']) ? $definition['label'] : $field;
@@ -62,21 +62,11 @@ class litecal_plugin_style_litecal extends views_plugin_style {
       '#default_value' => $this->options['colorby'],
     );    
 
-    $options = array('created' => t('Post date (default)'));
-    foreach (field_info_fields() as $field_id => $field) {
-      if ($field['type'] == 'date') {
-        foreach ($field['bundles'] as $bundle => $types) {
-          foreach ($types as $type) {
-            $options["$field_id"] = "$field_id ($type)";
-          }
-        }
-      }
-    }
     $form['date_field'] = array(
       '#title' => t('Date field'),
       '#description' => t('Choose a date field to provide a value to be used to position the result in the calendar.'),
       '#type' => 'select',
-      '#options' => $options,
+      '#options' => array('none' => t('None')) + $this->options_form_date_field_options(),
       '#default_value' => $this->options['date_field'],
     );
 
@@ -91,11 +81,32 @@ class litecal_plugin_style_litecal extends views_plugin_style {
   }
 
   /**
+   * Helper function for options_form().
+   * Retrives all date fields in an options array.
+   */
+  private function options_form_date_field_options() {
+    $options = array();
+    foreach (field_info_fields() as $field_id => $field) {
+      if ($field['type'] == 'date') {
+        foreach ($field['bundles'] as $bundle => $types) {
+          foreach ($types as $type) {
+            $options[$field_id] = "$field_id ($type)";
+          }
+        }
+      }
+    }
+    return $options;
+  }
+
+  /**
    * Validate options.
    */
   function options_validate(&$form, &$form_state) {
     if (!$this->isValid()) {
       drupal_set_message(t('The litecal style requires you to add a <strong>Date argument</strong> to your view.'), 'error');
+    }
+    if ($form_state['values']['date_field'] === 'none') {
+      drupal_set_message(t('You must select a date field for litecal to use.'), 'error');
     }
   }
 
@@ -182,40 +193,26 @@ class litecal_plugin_style_litecal extends views_plugin_style {
         break;
     }
 
+    //list($entity_type, $entities) = $view->query->get_result_entities($view->result);
+    $entities = array();
+
+    $field = $options['date_field'];
     $items = array();
-    $aliases = array();
-    $base = ($view->base_field === 'search_api_id') ? 'search_api' : $view->base_table;
-    $date_field = $options['date_field'];
-    $overlay = $options['day_overlay'];
-
-    foreach ($view->result as $count => $result) {
-      $date = array();
-      // Special handling for each view base table source.
-      // TODO: This could be a bit nicer.
-      switch ($base) {
-        case 'node':
-          $default_colorby_field_id = $view->base_field;
-          $entity = $result->_field_data['nid']['entity'];
-          break;
-        case 'search_api':
-          $default_colorby_field_id = 'search_api_item_id';
-          $entity = $result->entity;
-          break;
-      }
-
-      $id = !empty($colorby_field) ? $colorby_field->render($result) : $result->{$default_colorby_field_id};
-
-      // Defualt date field selected (created).
-      if ($date_field === 'created') {
-        $date['value'] = $entity->{$date_field};
-        $item = litecal_create_cal_item($date, $id, $vars['rows'][$count]);
-        $items[] = $item;
-      }
+    foreach ($entities as $key => $entity) {
+      $wrapper = entity_metadata_wrapper($entity_type, $entity);
 
       // A Date module field has been selected.      
-      else {
-        foreach ($entity->{$date_field}[LANGUAGE_NONE] as $date) {
-          $item = litecal_create_cal_item($date, $id, $vars['rows'][$count]);
+      if (isset($wrapper->{$field})) {
+        if ($wrapper->{$field} instanceof EntityListWrapper) {
+          // Repeating (multi-value) date field.
+          $dates = $wrapper->{$field};
+        } else {
+          // Single value date field.
+          $dates = array($wrapper->{$field});
+        }
+
+        foreach ($dates as $count => $date) {
+          $item = litecal_create_cal_item($date, $wrapper->getIdentifier(), $vars['rows'][$key]);
           $items[] = $item;
         }
       }
@@ -230,13 +227,14 @@ class litecal_plugin_style_litecal extends views_plugin_style {
 }
 
 function litecal_create_cal_item($date, $id, $data) {
-  $timezone_db = (isset($date['timezone_db'])) ? $date['timezone_db'] : NULL;
+  $timezone_db = isset($date->timezone_db) ? $date->timezone_db->value() : NULL;
   $item = new StdClass();
-  $item->from = new DateObject($date['value'], $timezone_db);
-  $item->to = isset($date['value2']) ? new DateObject($date['value2'], $date['timezone_db']) : clone $item->from;
+  $item->from = new DateObject($date->value->value(), $timezone_db);
+  $item->to = (isset($date->value2)) ? new DateObject($date->value2->value(), $timezone_db) : clone $item->from;
   if ($timezone_db) {
-    $item->from->setTimezone(new DateTimezone($date['timezone']));
-    $item->to->setTimezone(new DateTimezone($date['timezone']));
+    $timezone = $date->timezone->value();
+    $item->from->setTimezone(new DateTimezone($timezone));
+    $item->to->setTimezone(new DateTimezone($timezone));
   }
   $item->id = $id;
   $item->data = $data;
