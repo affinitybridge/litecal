@@ -11,6 +11,9 @@
  */
 class litecal_plugin_style_litecal extends views_plugin_style {
 
+  private $litecal;
+  private $dates;
+
   /**
    * Set default options.
    */
@@ -126,17 +129,9 @@ class litecal_plugin_style_litecal extends views_plugin_style {
     return $valid;
   }
 
-  /**
-   * Template preprocessor.
-   */
-  function preprocess(&$vars) {
-    drupal_add_css(drupal_get_path('module', 'litecal') .'/litecal.css');
-
-    $view = $vars['view'];
+  function pre_render($result) {
+    $view = $this->view;
     $options = $view->style_plugin->options;
-    $handler = $view->style_plugin;
-
-    $links = array();
 
     // Find the date_api argument handler.
     $date_argument_handler = NULL;
@@ -150,7 +145,7 @@ class litecal_plugin_style_litecal extends views_plugin_style {
     }
 
     $valid_argument = FALSE;
-    if (!is_null($date_argument_handler)) {
+    if (!empty($date_argument_handler)) {
       // This only works if the argument's default value has been set to
       // "current_date".
       // TODO: Need to add extra handling here.
@@ -192,12 +187,16 @@ class litecal_plugin_style_litecal extends views_plugin_style {
         $litecal = new LitecalDay($arg_from, $arg_to, $options);
         break;
     }
+    $this->litecal = $litecal;
 
-    //list($entity_type, $entities) = $view->query->get_result_entities($view->result);
-    $entities = array();
+    $this->prepare_dates($result);
+  }
 
-    $field = $options['date_field'];
-    $items = array();
+  private function prepare_dates($result) {
+    $field = $this->options['date_field'];
+    $this->dates = array();
+
+    list($entity_type, $entities) = $this->view->query->get_result_entities($result);
     foreach ($entities as $key => $entity) {
       $wrapper = entity_metadata_wrapper($entity_type, $entity);
 
@@ -205,34 +204,48 @@ class litecal_plugin_style_litecal extends views_plugin_style {
       if (isset($wrapper->{$field})) {
         if ($wrapper->{$field} instanceof EntityListWrapper) {
           // Repeating (multi-value) date field.
-          $dates = $wrapper->{$field};
+          foreach ($wrapper->{$field} as $count => $date) {
+            $this->dates[$key][] = $date->value();
+          }
         } else {
           // Single value date field.
-          $dates = array($wrapper->{$field});
-        }
-
-        foreach ($dates as $count => $date) {
-          $item = litecal_create_cal_item($date, $wrapper->getIdentifier(), $vars['rows'][$key]);
-          $items[] = $item;
+          $this->dates[$key][] = $wrapper->{$field}->value();
         }
       }
     }
+  }
 
-    if (isset($litecal)) {
-      $litecal->add($items);
-      $litecal->build();
-      $vars = array_merge($vars, $litecal->built);
+  /**
+   * Template preprocessor.
+   */
+  function preprocess(&$vars) {
+    drupal_add_css(drupal_get_path('module', 'litecal') .'/litecal.css');
+
+    $view = $vars['view'];
+    $options = $view->style_plugin->options;
+
+    foreach ($this->dates as $key => $dates) {
+      foreach ($dates as $count => $date) {
+        $item = litecal_create_cal_item($date, "$key-$count", $vars['rows'][$key]);
+        $items[] = $item;
+      }
+    }
+
+    if (isset($this->litecal)) {
+      $this->litecal->add($items);
+      $this->litecal->build();
+      $vars = array_merge($vars, $this->litecal->built);
     }
   }
 }
 
 function litecal_create_cal_item($date, $id, $data) {
-  $timezone_db = isset($date->timezone_db) ? $date->timezone_db->value() : NULL;
+  $timezone_db = isset($date['timezone_db']) ? $date['timezone_db'] : NULL;
   $item = new StdClass();
-  $item->from = new DateObject($date->value->value(), $timezone_db);
-  $item->to = (isset($date->value2)) ? new DateObject($date->value2->value(), $timezone_db) : clone $item->from;
+  $item->from = new DateObject($date['value'], $timezone_db);
+  $item->to = (isset($date['value2'])) ? new DateObject($date['value2'], $timezone_db) : clone $item->from;
   if ($timezone_db) {
-    $timezone = $date->timezone->value();
+    $timezone = $date['timezone'];
     $item->from->setTimezone(new DateTimezone($timezone));
     $item->to->setTimezone(new DateTimezone($timezone));
   }

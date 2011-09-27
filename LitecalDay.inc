@@ -53,7 +53,7 @@ class LitecalDay {
    */
   function add($items = array()) {
     $this->items = array_merge($this->items, $items);
-    foreach ($items as $item) {
+    foreach ($this->items as $item) {
       foreach ($this->timespans as $timespan) {
         $timespan->add($item->from, $item->to, $item->id, $item->data);
       }
