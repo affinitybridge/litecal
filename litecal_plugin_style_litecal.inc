@@ -13,6 +13,51 @@ class litecal_plugin_style_litecal extends views_plugin_style {
 
   private $litecal;
   private $dates;
+  private $granularity;
+  private $from;
+  private $to;
+
+  function init(&$view, &$display, $options = NULL) {
+    parent::init($view, $display, $options);
+
+    // Find the date_api argument handler.
+    if (empty($view->argument)) {
+      return FALSE;
+    }
+
+    $date_argument_handler = NULL;
+    foreach ($view->argument as $argument => $handler) {
+      // TODO: This probably isn't a great value to use...
+      // Possibly use $handler->field as an alternative.
+      if ($handler->definition['group'] === 'Date') {
+        $date_argument_handler = $handler;
+        break;
+      }
+    }
+
+    $valid_argument = FALSE;
+    if (!empty($date_argument_handler)) {
+      // This only works if the argument's default value has been set to
+      // "current_date".
+      // TODO: Need to add extra handling here.
+      $valid_argument = TRUE;
+
+      $arg = $date_argument_handler->argument;
+      $this->granularity = $date_argument_handler->granularity;
+      $this->from = $handler->min_date;
+      $this->to = $handler->max_date;
+    }
+
+    if (!$valid_argument) {
+      $arg = date("Y-m", REQUEST_TIME);
+      $handler = new date_sql_handler();
+      $date_range = $handler->arg_range($arg);
+
+      $this->granularity = "month";
+      $this->from = $date_range[0];
+      $this->to = $date_range[1];
+    }   
+  }
 
   /**
    * Set default options.
@@ -131,60 +176,25 @@ class litecal_plugin_style_litecal extends views_plugin_style {
 
   function pre_render($result) {
     $view = $this->view;
-    $options = $view->style_plugin->options;
 
-    // Find the date_api argument handler.
-    $date_argument_handler = NULL;
-    foreach ($view->argument as $argument => $handler) {
-      // TODO: This probably isn't a great value to use...
-      // Possibly use $handler->field as an alternative.
-      if ($handler->definition['group'] === 'Date') {
-        $date_argument_handler = $handler;
-        break;
-      }
-    }
-
-    $valid_argument = FALSE;
-    if (!empty($date_argument_handler)) {
-      // This only works if the argument's default value has been set to
-      // "current_date".
-      // TODO: Need to add extra handling here.
-      $valid_argument = TRUE;
-
-      $arg = $date_argument_handler->argument;
-      $arg_granularity = $date_argument_handler->granularity;
-      $arg_from = $handler->min_date;
-      $arg_to = $handler->max_date;
-    }
-
-    if (!$valid_argument) {
-      $arg = date("Y-m", REQUEST_TIME);
-      $handler = new date_sql_handler();
-      $date_range = $handler->arg_range($arg);
-
-      $arg_granularity = "month";
-      $arg_from = $date_range[0];
-      $arg_to = $date_range[1];
-    }
-
-    $options['headers'] = litecal_get_labels($view->field, $view->style_plugin->row_plugin->options);
+    $this->options['headers'] = litecal_get_labels($view->field, $view->style_plugin->row_plugin->options);
     
     // Generate the right calendar type based on date granularity
     // TODO: This could definitely be made prettier.
-    switch ($arg_granularity) {
+    switch ($this->granularity) {
       case 'month':
-        if ($options['day_overlay']) {
-          $options['url'] = $view->get_url();
+        if ($this->options['day_overlay']) {
+          $this->options['url'] = $view->get_url();
         }
-        $litecal = new litecal_month($arg_from, $arg_to, $options);
+        $litecal = new litecal_month($this->from, $this->to, $this->options);
         break;
 
       case 'week':
-        $litecal = new LitecalWeek($arg_from, $arg_to, $options);
+        $litecal = new LitecalWeek($this->from, $this->to, $this->options);
         break;
 
       case 'day':
-        $litecal = new LitecalDay($arg_from, $arg_to, $options);
+        $litecal = new LitecalDay($this->from, $this->to, $this->options);
         break;
     }
     $this->litecal = $litecal;
@@ -222,7 +232,6 @@ class litecal_plugin_style_litecal extends views_plugin_style {
     drupal_add_css(drupal_get_path('module', 'litecal') .'/litecal.css');
 
     $view = $vars['view'];
-    $options = $view->style_plugin->options;
 
     foreach ($this->dates as $key => $dates) {
       foreach ($dates as $count => $date) {
@@ -232,7 +241,9 @@ class litecal_plugin_style_litecal extends views_plugin_style {
     }
 
     if (isset($this->litecal)) {
-      $this->litecal->add($items);
+      if (!empty($items)) {
+        $this->litecal->add($items);
+      }
       $this->litecal->build();
       $vars = array_merge($vars, $this->litecal->built);
     }
