@@ -92,7 +92,7 @@ function litecal_menu() {
       }
       if (isset($display->display_options['style_plugin']) && $display->display_options['style_plugin'] === 'litecal') {
         $current['is_litecal'] = TRUE;
-        if ($display->display_plugin !== 'default') {
+        if ($display->display_plugin !== 'block') {
           $current['display_id'] = $display->id;
         }
       }
@@ -135,7 +135,6 @@ function litecal_day_overlay_ajax_callback($ajax = FALSE, $view = '', $details =
 
   // Disable any pagers.
   litecal_disable_pager($view);
-  //$view->date_info->hide_nav = TRUE;
 
   // Construct the dialog's content.
   $content = $view->preview($details['display_id'], array(arg(1)));
