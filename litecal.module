@@ -140,6 +140,15 @@ function litecal_day_overlay_ajax_callback($ajax = FALSE, $view = '', $details =
   $content = $view->preview($details['display_id'], array(arg(1)));
 
   if ($ajax) {
+    $widths = array(
+      'xsmall' => 200,
+      'small' => 200,
+      'medium' => 300,
+      'large' => 766,
+    );
+    $params = drupal_get_query_parameters();
+    $size = (isset($params['sizenotice'])) ? $params['sizenotice'] : 'large';
+
     // Options that are passed to the jQuery UI dialog. See the jQuery UI
     // website for more available options: http://jqueryui.com/demos/dialog/
     // TODO: These options either need to be configurable in the litecal style
@@ -148,7 +157,7 @@ function litecal_day_overlay_ajax_callback($ajax = FALSE, $view = '', $details =
       'position' => 'center',
       'title' => $view->get_title(),
       'modal' => 'true',
-      'width' => 766,
+      'width' => $widths[$size],
     );
 
     $commands = array();
