@@ -147,15 +147,24 @@ function litecal_day_overlay_ajax_callback($ajax = FALSE, $view = '', $details =
       'large'  => 'dialog-cal-large',
     );
  
+    $height = array(
+      'xsmall' => 152,
+      'small'  => 258,
+      'medium' => 416,
+      'large'  => 548,
+      'default' => 'auto',
+    );
+    
     $widths = array(
-      'xsmall' => 230,
-      'small'  => 430,
-      'medium' => 630,
-      'large'  => 710,
+      'xsmall'   => 230,
+      'small'    => 430,
+      'medium'   => 630,
+      'large'    => 830,
+      'default'  => 710,
     );
     
     $params = drupal_get_query_parameters();
-    $size = (isset($params['sizenotice'])) ? $params['sizenotice'] : 'large';
+    $size = (isset($params['sizenotice'])) ? $params['sizenotice'] : 'default';
     
     // Options that are passed to the jQuery UI dialog. See the jQuery UI
     // website for more available options: http://jqueryui.com/demos/dialog/
@@ -163,7 +172,8 @@ function litecal_day_overlay_ajax_callback($ajax = FALSE, $view = '', $details =
     //       settings or passed through an overridable theme function...
     $options = array(
       'dialogClass' => 'dialog-cal ' . $classes[$size],
-      'modal' => 'true',
+      'height' => $height[$size],
+      'modal' => TRUE,
       'position' => 'center',
       'resizable' => FALSE,
       'title' => $view->get_title(),
