@@ -99,10 +99,9 @@ function theme_litecal_timeslot_days($args) {
   if (!empty($args['slot_items'])) {
     $slot_attr['class'] = "label use-dialog use-ajax has-event";
 
-    $date_arr = $date->toArray();
-    $date_arr['month'] = ($date_arr['month'] < 10) ? "0{$date_arr['month']}" : $date_arr['month'];
-    $date_arr['day'] = ($date_arr['day'] < 10) ? "0{$date_arr['day']}" : $date_arr['day'];
-    $path = "{$timespan->url}-{$date_arr['day']}/nojs";
+    $arg = $date->format(DATE_FORMAT_DATE);
+    // TODO: This assumes the argument is @ end of url.
+    $path = "{$timespan->url}/$arg/nojs";
 
     $options['query'] = drupal_get_query_parameters();
   }
