@@ -30,7 +30,7 @@ class LitecalDay {
     $current = clone $from_date;
 
     while (litecal_date_difference($this->display_to, $current, 'hours') > 0) {
-      $timespan = new litecal_timespan($current, 1, 'hours');
+      $timespan = new litecal_timespan($current, 60, 'minutes');
 
       // If the real calendar start is not the same as the display start,
       // We need to store it with the timespan.
