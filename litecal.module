@@ -149,9 +149,9 @@ function litecal_day_overlay_ajax_callback($ajax = FALSE, $view = '', $details =
  
     $height = array(
       'xsmall' => 152,
-      'small'  => 258,
-      'medium' => 416,
-      'large'  => 548,
+      'small'  => 259,
+      'medium' => 401,
+      'large'  => 499,
       'default' => 'auto',
     );
     
