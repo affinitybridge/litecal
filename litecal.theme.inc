@@ -109,15 +109,14 @@ function theme_litecal_timeslot_days($args) {
   $options['attributes'] = $slot_attr;
 
   $formatted = date_format_date($date, 'custom', $format);
-  $name = "<span class='num'>{$formatted}</span>";
+  $name = "<span class='num'>$formatted</span>";
 
   if (isset($path)) {
-    return "<div {$attr}>" . l($name, $path, $options) . "</div>";
+    return "<div $attr>" . l($name, $path, $options) . "</div>";
   }
-
   else {
     $slot_attr = drupal_attributes($slot_attr);
-    return "<div {$attr}><span $slot_attr>$name</span></div>";
+    return "<div $attr><span $slot_attr>$name</span></div>";
   }
 }
 
