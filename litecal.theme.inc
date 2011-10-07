@@ -99,25 +99,23 @@ function theme_litecal_timeslot_days($args) {
   if (!empty($args['slot_items'])) {
     $slot_attr['class'] = "label use-dialog use-ajax has-event";
 
-    $date_arr = $date->toArray();
-    $date_arr['month'] = ($date_arr['month'] < 10) ? "0{$date_arr['month']}" : $date_arr['month'];
-    $date_arr['day'] = ($date_arr['day'] < 10) ? "0{$date_arr['day']}" : $date_arr['day'];
-    $path = "{$timespan->url}-{$date_arr['day']}/nojs";
+    $arg = $date->format(DATE_FORMAT_DATE);
+    // TODO: This assumes the argument is @ end of url.
+    $path = "{$timespan->url}/$arg/nojs";
 
     $options['query'] = drupal_get_query_parameters();
   }
   $options['attributes'] = $slot_attr;
 
   $formatted = date_format_date($date, 'custom', $format);
-  $name = "<span class='num'>{$formatted}</span>";
+  $name = "<span class='num'>$formatted</span>";
 
   if (isset($path)) {
-    return "<div {$attr}>" . l($name, $path, $options) . "</div>";
+    return "<div $attr>" . l($name, $path, $options) . "</div>";
   }
-
   else {
     $slot_attr = drupal_attributes($slot_attr);
-    return "<div {$attr}><span $slot_attr>$name</span></div>";
+    return "<div $attr><span $slot_attr>$name</span></div>";
   }
 }
 
