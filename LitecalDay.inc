@@ -67,7 +67,12 @@ class LitecalDay {
     $hours = date_hours('H', TRUE);
     $total = count($hours);
     foreach ($hours as $num => $label) {
-      $headers[$num] = theme('litecal_header', array('label' => "$label:00", 'start' => $num, 'granularity' => $total, 'orientation' => 'vertical'));
+      if ($label === '00') {
+        $label = '';
+      } else {
+        $label = "$label:00";
+      }
+      $headers[$num] = theme('litecal_header', array('label' => $label, 'start' => $num, 'granularity' => $total, 'orientation' => 'vertical'));
     }
 
     // Getting current day.
