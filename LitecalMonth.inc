@@ -127,7 +127,7 @@ class LitecalMonth {
     // Build header labels
     switch ($display_style) {
       case 'compact':
-        $weekdays = date_week_days_ordered(date_week_days_abbr(TRUE, TRUE, 1));
+        $weekdays = date_week_days_ordered(date_week_days_abbr(TRUE, TRUE, 2));
         break;
       default:
         $weekdays = date_week_days_ordered(date_week_days(TRUE));
